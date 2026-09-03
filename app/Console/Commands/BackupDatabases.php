@@ -7,6 +7,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
+use Spatie\DbDumper\Compressors\GzipCompressor;
 use Spatie\DbDumper\Databases\MySql;
 
 class BackupDatabases extends Command
@@ -40,13 +41,13 @@ class BackupDatabases extends Command
             $localFile = "{$localFolder}/{$dbName}_{$timestamp}.sql.gz";
 
             try {
-                // 1. Dump compresso locale
+                // 1. Dump compresso locale da config()
                 MySql::create()
                     ->setDbName($dbName)
-                    ->setUserName(env('DB_BACKUP_USERNAME'))
-                    ->setPassword(env('DB_BACKUP_PASSWORD'))
-                    ->setHost(env('DB_BACKUP_HOST', '127.0.0.1'))
-                    ->useGzip()
+                    ->setUserName(config('backup_paths.mysql.username'))
+                    ->setPassword(config('backup_paths.mysql.password'))
+                    ->setHost(config('backup_paths.mysql.host', '127.0.0.1'))
+                    ->useCompressor(new GzipCompressor())
                     ->dumpToFile($localFile);
 
                 // 2. Verifiche di integrità
@@ -70,18 +71,22 @@ class BackupDatabases extends Command
             }
         }
 
-        // 3. Sincronizzazione dell'intera cartella locale dei DB verso R2 tramite AWS CLI
+        // 3. Sincronizzazione R2 da config()
         $this->info('Sincronizzazione dei file dump verso Cloudflare R2...');
-        $syncResult = Process::withEnv([
-            'AWS_ACCESS_KEY_ID' => env('R2_ACCESS_KEY_ID'),
-            'AWS_SECRET_ACCESS_KEY' => env('R2_SECRET_ACCESS_KEY'),
+
+        $syncResult = Process::env([
+            'AWS_ACCESS_KEY_ID' => config('filesystems.disks.r2.key'),
+            'AWS_SECRET_ACCESS_KEY' => config('filesystems.disks.r2.secret'),
             'AWS_DEFAULT_REGION' => 'auto',
+            'AWS_REQUEST_CHECKSUM_CALCULATION' => 'when_required',
+            'AWS_RESPONSE_CHECKSUM_VALIDATION' => 'when_required',
         ])->run([
-            'aws', 's3', 'sync',
+            'aws',
+            '--endpoint-url='.config('filesystems.disks.r2.endpoint'),
+            's3', 'sync',
             storage_path('app/backups/databases'),
-            's3://'.env('R2_BUCKET').'/databases',
-            '--endpoint-url', env('R2_ENDPOINT'),
-            '--no-progress',
+            's3://'.config('filesystems.disks.r2.bucket').'/mysql',
+            '--only-show-errors',
         ]);
 
         if (! $syncResult->successful()) {
@@ -104,7 +109,7 @@ class BackupDatabases extends Command
         foreach ($files as $file) {
             if ($file->getMTime() < now()->subDays($days)->timestamp) {
                 File::delete($file->getRealPath());
-                $this->line("Pulizia locale: eliminato {$file}->getFilename()");
+                $this->line("Pulizia locale: eliminato {$file->getFilename()}");
             }
         }
     }
