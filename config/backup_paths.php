@@ -6,7 +6,7 @@ return [
         'ignored' => ['information_schema', 'performance_schema', 'mysql', 'sys'],
 
         // Se popolato, esegue il backup SOLO di questi DB. Se vuoto [], fa il backup di TUTTI.
-        'only' => [],
+        'only' => ['unicooam', 'unicogdpr'],
     ],
 
     'upload_directories' => [
