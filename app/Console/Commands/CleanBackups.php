@@ -14,15 +14,17 @@ class CleanBackups extends Command
 
     public function handle(): int
     {
-        $bucket = env('R2_BUCKET');
-        $endpoint = env('R2_ENDPOINT');
+        $bucket = config('backup_paths.r2.bucket');
+        $endpoint = config('backup_paths.r2.endpoint');
+
+        $awsEnv = [
+            'AWS_ACCESS_KEY_ID' => config('backup_paths.r2.access_key_id'),
+            'AWS_SECRET_ACCESS_KEY' => config('backup_paths.r2.secret_access_key'),
+            'AWS_DEFAULT_REGION' => 'auto',
+        ];
 
         // Elenca i file dal bucket
-        $result = Process::withEnv([
-            'AWS_ACCESS_KEY_ID' => env('R2_ACCESS_KEY_ID'),
-            'AWS_SECRET_ACCESS_KEY' => env('R2_SECRET_ACCESS_KEY'),
-            'AWS_DEFAULT_REGION' => 'auto',
-        ])->run([
+        $result = Process::env($awsEnv)->run([
             'aws', 's3api', 'list-objects-v2',
             '--bucket', $bucket,
             '--prefix', 'databases/',
@@ -37,7 +39,8 @@ class CleanBackups extends Command
             return self::FAILURE;
         }
 
-        $files = array_filter(explode("\t", trim($result->output())));
+        $files = array_filter(explode("\t", trim($result->output())), fn ($file) => $file !== 'None');
+        $failed = false;
 
         foreach ($files as $file) {
             // Estrai data dal nome file (es: databases/app1/app1_2026-09-03_02-00-00.sql.gz)
@@ -50,22 +53,23 @@ class CleanBackups extends Command
             if ($this->shouldDelete($date)) {
                 $this->info("Eliminazione backup obsoleto su R2: {$file}");
 
-                Process::withEnv([
-                    'AWS_ACCESS_KEY_ID' => env('R2_ACCESS_KEY_ID'),
-                    'AWS_SECRET_ACCESS_KEY' => env('R2_SECRET_ACCESS_KEY'),
-                    'AWS_DEFAULT_REGION' => 'auto',
-                ])->run([
+                $rmResult = Process::env($awsEnv)->run([
                     'aws', 's3', 'rm',
                     "s3://{$bucket}/{$file}",
                     '--endpoint-url', $endpoint,
                 ]);
+
+                if (! $rmResult->successful()) {
+                    $this->error("Errore eliminazione {$file}: ".$rmResult->errorOutput());
+                    $failed = true;
+                }
             }
         }
 
-        return self::SUCCESS;
+        return $failed ? self::FAILURE : self::SUCCESS;
     }
 
-    private function shouldDelete(Carbon $date): bool
+    public function shouldDelete(Carbon $date): bool
     {
         $now = now();
         $diffInDays = $date->diffInDays($now);

@@ -43,9 +43,9 @@ class BackupDatabases extends Command
                 // 1. Dump compresso locale
                 MySql::create()
                     ->setDbName($dbName)
-                    ->setUserName(env('DB_BACKUP_USERNAME'))
-                    ->setPassword(env('DB_BACKUP_PASSWORD'))
-                    ->setHost(env('DB_BACKUP_HOST', '127.0.0.1'))
+                    ->setUserName(config('backup_paths.databases.connection.username'))
+                    ->setPassword(config('backup_paths.databases.connection.password'))
+                    ->setHost(config('backup_paths.databases.connection.host'))
                     ->useGzip()
                     ->dumpToFile($localFile);
 
@@ -72,15 +72,15 @@ class BackupDatabases extends Command
 
         // 3. Sincronizzazione dell'intera cartella locale dei DB verso R2 tramite AWS CLI
         $this->info('Sincronizzazione dei file dump verso Cloudflare R2...');
-        $syncResult = Process::withEnv([
-            'AWS_ACCESS_KEY_ID' => env('R2_ACCESS_KEY_ID'),
-            'AWS_SECRET_ACCESS_KEY' => env('R2_SECRET_ACCESS_KEY'),
+        $syncResult = Process::env([
+            'AWS_ACCESS_KEY_ID' => config('backup_paths.r2.access_key_id'),
+            'AWS_SECRET_ACCESS_KEY' => config('backup_paths.r2.secret_access_key'),
             'AWS_DEFAULT_REGION' => 'auto',
-        ])->run([
+        ])->timeout((int) config('backup_paths.sync_timeout', 3600))->run([
             'aws', 's3', 'sync',
             storage_path('app/backups/databases'),
-            's3://'.env('R2_BUCKET').'/databases',
-            '--endpoint-url', env('R2_ENDPOINT'),
+            's3://'.config('backup_paths.r2.bucket').'/databases',
+            '--endpoint-url', config('backup_paths.r2.endpoint'),
             '--no-progress',
         ]);
 
@@ -104,7 +104,7 @@ class BackupDatabases extends Command
         foreach ($files as $file) {
             if ($file->getMTime() < now()->subDays($days)->timestamp) {
                 File::delete($file->getRealPath());
-                $this->line("Pulizia locale: eliminato {$file}->getFilename()");
+                $this->line("Pulizia locale: eliminato {$file->getFilename()}");
             }
         }
     }

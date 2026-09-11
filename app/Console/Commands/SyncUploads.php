@@ -14,8 +14,10 @@ class SyncUploads extends Command
     public function handle(): int
     {
         $directories = config('backup_paths.upload_directories', []);
-        $bucket = env('R2_BUCKET');
-        $endpoint = env('R2_ENDPOINT');
+        $bucket = config('backup_paths.r2.bucket');
+        $endpoint = config('backup_paths.r2.endpoint');
+        $timeout = (int) config('backup_paths.sync_timeout', 3600);
+        $failed = false;
 
         foreach ($directories as $key => $localPath) {
             if (! is_dir($localPath)) {
@@ -26,11 +28,11 @@ class SyncUploads extends Command
 
             $this->info("Sync incrementale per: [{$key}] ({$localPath})...");
 
-            $result = Process::withEnv([
-                'AWS_ACCESS_KEY_ID' => env('R2_ACCESS_KEY_ID'),
-                'AWS_SECRET_ACCESS_KEY' => env('R2_SECRET_ACCESS_KEY'),
+            $result = Process::env([
+                'AWS_ACCESS_KEY_ID' => config('backup_paths.r2.access_key_id'),
+                'AWS_SECRET_ACCESS_KEY' => config('backup_paths.r2.secret_access_key'),
                 'AWS_DEFAULT_REGION' => 'auto',
-            ])->timeout(3600)->run([
+            ])->timeout($timeout)->run([
                 'aws', 's3', 'sync',
                 $localPath,
                 "s3://{$bucket}/uploads/{$key}",
@@ -42,9 +44,10 @@ class SyncUploads extends Command
                 $this->info(" Sync completato per [{$key}].");
             } else {
                 $this->error(" Errore sync [{$key}]: ".$result->errorOutput());
+                $failed = true;
             }
         }
 
-        return self::SUCCESS;
+        return $failed ? self::FAILURE : self::SUCCESS;
     }
 }
