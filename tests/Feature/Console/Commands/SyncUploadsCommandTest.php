@@ -7,6 +7,18 @@ use Tests\TestCase;
 
 class SyncUploadsCommandTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config([
+            'filesystems.disks.r2.bucket' => 'test-bucket',
+            'filesystems.disks.r2.endpoint' => 'https://example.r2.cloudflarestorage.com',
+            'filesystems.disks.r2.key' => 'fake-key',
+            'filesystems.disks.r2.secret' => 'fake-secret',
+        ]);
+    }
+
     public function test_it_syncs_each_configured_directory_that_exists(): void
     {
         $existingDir = sys_get_temp_dir().'/backup_uploads_test_'.uniqid();
@@ -17,8 +29,6 @@ class SyncUploadsCommandTest extends TestCase
                 'exists' => $existingDir,
                 'missing' => '/path/does/not/exist',
             ],
-            'backup_paths.r2.bucket' => 'test-bucket',
-            'backup_paths.r2.endpoint' => 'https://example.r2.cloudflarestorage.com',
         ]);
 
         Process::fake();
@@ -34,16 +44,24 @@ class SyncUploadsCommandTest extends TestCase
         rmdir($existingDir);
     }
 
+    public function test_it_fails_when_r2_config_is_missing(): void
+    {
+        config(['filesystems.disks.r2.bucket' => null]);
+        config(['backup_paths.upload_directories' => ['exists' => sys_get_temp_dir()]]);
+
+        Process::fake();
+
+        $this->artisan('backup:uploads')->assertExitCode(1);
+
+        Process::assertNothingRan();
+    }
+
     public function test_it_fails_when_a_sync_command_fails(): void
     {
         $existingDir = sys_get_temp_dir().'/backup_uploads_test_'.uniqid();
         mkdir($existingDir);
 
-        config([
-            'backup_paths.upload_directories' => ['exists' => $existingDir],
-            'backup_paths.r2.bucket' => 'test-bucket',
-            'backup_paths.r2.endpoint' => 'https://example.r2.cloudflarestorage.com',
-        ]);
+        config(['backup_paths.upload_directories' => ['exists' => $existingDir]]);
 
         Process::fake(['aws*' => Process::result(errorOutput: 'boom', exitCode: 1)]);
 

@@ -7,6 +7,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
+use Spatie\DbDumper\Compressors\GzipCompressor;
 use Spatie\DbDumper\Databases\MySql;
 
 class BackupDatabases extends Command
@@ -43,10 +44,10 @@ class BackupDatabases extends Command
                 // 1. Dump compresso locale
                 MySql::create()
                     ->setDbName($dbName)
-                    ->setUserName(config('backup_paths.databases.connection.username'))
-                    ->setPassword(config('backup_paths.databases.connection.password'))
-                    ->setHost(config('backup_paths.databases.connection.host'))
-                    ->useGzip()
+                    ->setUserName(config('backup_paths.mysql.username'))
+                    ->setPassword(config('backup_paths.mysql.password'))
+                    ->setHost(config('backup_paths.mysql.host', '127.0.0.1'))
+                    ->useCompressor(new GzipCompressor)
                     ->dumpToFile($localFile);
 
                 // 2. Verifiche di integrità
@@ -72,16 +73,29 @@ class BackupDatabases extends Command
 
         // 3. Sincronizzazione dell'intera cartella locale dei DB verso R2 tramite AWS CLI
         $this->info('Sincronizzazione dei file dump verso Cloudflare R2...');
+
+        $bucket = config('filesystems.disks.r2.bucket');
+        $endpoint = config('filesystems.disks.r2.endpoint');
+
+        if (! $bucket || ! $endpoint || ! config('filesystems.disks.r2.key') || ! config('filesystems.disks.r2.secret')) {
+            $this->error('Configurazione R2 mancante in config/filesystems.php (disco "r2").');
+
+            return self::FAILURE;
+        }
+
         $syncResult = Process::env([
-            'AWS_ACCESS_KEY_ID' => config('backup_paths.r2.access_key_id'),
-            'AWS_SECRET_ACCESS_KEY' => config('backup_paths.r2.secret_access_key'),
+            'AWS_ACCESS_KEY_ID' => config('filesystems.disks.r2.key'),
+            'AWS_SECRET_ACCESS_KEY' => config('filesystems.disks.r2.secret'),
             'AWS_DEFAULT_REGION' => 'auto',
+            'AWS_REQUEST_CHECKSUM_CALCULATION' => 'when_required',
+            'AWS_RESPONSE_CHECKSUM_VALIDATION' => 'when_required',
         ])->timeout((int) config('backup_paths.sync_timeout', 3600))->run([
-            'aws', 's3', 'sync',
+            'aws',
+            '--endpoint-url='.$endpoint,
+            's3', 'sync',
             storage_path('app/backups/databases'),
-            's3://'.config('backup_paths.r2.bucket').'/databases',
-            '--endpoint-url', config('backup_paths.r2.endpoint'),
-            '--no-progress',
+            "s3://{$bucket}/databases",
+            '--only-show-errors',
         ]);
 
         if (! $syncResult->successful()) {
