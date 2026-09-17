@@ -6,7 +6,7 @@ return [
         'ignored' => ['information_schema', 'performance_schema', 'mysql', 'sys'],
 
         // Se popolato, esegue il backup SOLO di questi DB. Se vuoto [], fa il backup di TUTTI.
-        'only' => ['unicooam', 'unicogdpr', 'whistle'],
+        'only' => ['proforma', 'unicooam', 'unicobpm', 'unicoloan', 'whistle'],
     ],
 
     // Credenziali usate per il dump (utente separato, idealmente in sola lettura)
