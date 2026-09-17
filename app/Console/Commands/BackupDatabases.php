@@ -14,7 +14,7 @@ class BackupDatabases extends Command
 {
     protected $signature = 'backup:databases';
 
-    protected $description = 'Esegue il dump locale dei database, ne verifica l\'integrità e li sincronizza su R2';
+    protected $description = 'Esegue il dump locale dei database, ne verifica l\'integrità e li sincronizza sulle destinazioni configurate (R2 e/o VPS remota)';
 
     public function handle(): int
     {
@@ -71,7 +71,30 @@ class BackupDatabases extends Command
             }
         }
 
-        // 3. Sincronizzazione dell'intera cartella locale dei DB verso R2 tramite AWS CLI
+        // 3. Sincronizzazione della cartella locale dei DB verso le destinazioni configurate
+        $targets = config('backup_paths.sync_targets', ['r2']);
+        $syncFailed = false;
+
+        if (in_array('r2', $targets, true) && ! $this->syncToR2()) {
+            $syncFailed = true;
+        }
+
+        if (in_array('vps', $targets, true) && ! $this->syncToRemoteVps()) {
+            $syncFailed = true;
+        }
+
+        if ($syncFailed) {
+            return self::FAILURE;
+        }
+
+        // 4. Pulizia locali più vecchi di N giorni
+        $this->cleanLocalBackups();
+
+        return empty($failedDbs) ? self::SUCCESS : self::FAILURE;
+    }
+
+    private function syncToR2(): bool
+    {
         $this->info('Sincronizzazione dei file dump verso Cloudflare R2...');
 
         $bucket = config('filesystems.disks.r2.bucket');
@@ -80,8 +103,11 @@ class BackupDatabases extends Command
         if (! $bucket || ! $endpoint || ! config('filesystems.disks.r2.key') || ! config('filesystems.disks.r2.secret')) {
             $this->error('Configurazione R2 mancante in config/filesystems.php (disco "r2").');
 
-            return self::FAILURE;
+            return false;
         }
+
+        $prefix = trim((string) config('backup_paths.destination_prefix'), '/');
+        $remoteKey = $prefix !== '' ? "{$prefix}/databases" : 'databases';
 
         $syncResult = Process::env([
             'AWS_ACCESS_KEY_ID' => config('filesystems.disks.r2.key'),
@@ -94,20 +120,55 @@ class BackupDatabases extends Command
             '--endpoint-url='.$endpoint,
             's3', 'sync',
             storage_path('app/backups/databases'),
-            "s3://{$bucket}/databases",
+            "s3://{$bucket}/{$remoteKey}",
             '--only-show-errors',
         ]);
 
         if (! $syncResult->successful()) {
             $this->error('Errore Sync R2: '.$syncResult->errorOutput());
 
-            return self::FAILURE;
+            return false;
         }
 
-        // 4. Pulizia locali più vecchi di N giorni
-        $this->cleanLocalBackups();
+        return true;
+    }
 
-        return empty($failedDbs) ? self::SUCCESS : self::FAILURE;
+    private function syncToRemoteVps(): bool
+    {
+        $this->info('Sincronizzazione dei file dump verso la VPS remota...');
+
+        $host = config('backup_paths.remote.host');
+        $user = config('backup_paths.remote.user');
+        $password = config('backup_paths.remote.password');
+        $remotePath = config('backup_paths.remote.path');
+        $port = config('backup_paths.remote.port', 22);
+
+        if (! $host || ! $user || ! $password || ! $remotePath) {
+            $this->error('Configurazione VPS remota mancante in config/backup_paths.php ("remote").');
+
+            return false;
+        }
+
+        $prefix = trim((string) config('backup_paths.destination_prefix'), '/');
+        $remoteDir = $prefix !== '' ? "{$remotePath}/{$prefix}/databases" : "{$remotePath}/databases";
+
+        $syncResult = Process::env(['SSHPASS' => $password])
+            ->timeout((int) config('backup_paths.sync_timeout', 3600))
+            ->run([
+                'sshpass', '-e',
+                'rsync', '-az', '--delete', '--mkpath',
+                '-e', "ssh -o StrictHostKeyChecking=accept-new -p {$port}",
+                storage_path('app/backups/databases').'/',
+                "{$user}@{$host}:{$remoteDir}/",
+            ]);
+
+        if (! $syncResult->successful()) {
+            $this->error('Errore Sync VPS remota: '.$syncResult->errorOutput());
+
+            return false;
+        }
+
+        return true;
     }
 
     private function cleanLocalBackups(): void

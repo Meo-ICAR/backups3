@@ -36,6 +36,24 @@ return [
     // Al successo viene chiamato cosi' com'e'; al fallimento con suffisso /fail
     'heartbeat_url' => env('HEARTBEAT_URL'),
 
-    // Timeout (secondi) per i processi 'aws s3 sync' verso R2
+    // Timeout (secondi) per i processi di sincronizzazione (aws s3 sync / rsync)
     'sync_timeout' => env('BACKUP_SYNC_TIMEOUT', 3600),
+
+    // Destinazioni di sincronizzazione attive: elenco separato da virgole tra "r2" e "vps".
+    // Esempi: "r2" (solo Cloudflare R2), "vps" (solo VPS remota), "r2,vps" (entrambe).
+    'sync_targets' => array_filter(array_map('trim', explode(',', env('BACKUP_SYNC_TARGET', 'r2')))),
+
+    // Sottocartella (su R2 e sulla VPS remota) sotto cui finiscono i backup di questo server,
+    // per distinguere più server/clienti che scrivono sulla stessa destinazione condivisa.
+    // Default: hostname della macchina. Override manuale con BACKUP_DESTINATION_PREFIX in .env.
+    'destination_prefix' => env('BACKUP_DESTINATION_PREFIX', gethostname()),
+
+    // VPS remota di destinazione dei backup via rsync/ssh (alternativa/complemento a R2)
+    'remote' => [
+        'host' => env('REMOTE_BACKUP_HOST'),
+        'user' => env('REMOTE_BACKUP_USER'),
+        'password' => env('REMOTE_BACKUP_PASSWORD'),
+        'path' => env('REMOTE_BACKUP_PATH', '/home/ubuntu/backups'),
+        'port' => env('REMOTE_BACKUP_PORT', 22),
+    ],
 ];
