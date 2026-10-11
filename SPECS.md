@@ -26,10 +26,26 @@ dominio oltre lo scaffold di default di Laravel:
 | `backup:uploads`    | `app/Console/Commands/SyncUploads.php`        | `aws s3 sync` incrementale di cartelle configurate verso R2 |
 | `backup:clean`      | `app/Console/Commands/CleanBackups.php`       | Lista oggetti `databases/` su R2 ed elimina quelli fuori retention |
 
-Orchestrazione in `routes/console.php`: uno `Schedule::call()` chiamato
-`backup:nightly-run`, alle 02:00, con `withoutOverlapping()` e
-`onOneServer()` (richiede `CACHE_STORE` con driver condiviso — qui
+Orchestrazione: il comando `backup:nightly` (`app/Console/Commands/NightlyBackup.php`) esegue in sequenza i tre comandi, chiama
+l'heartbeat (con `/fail` se qualcosa è fallito) e comunica l'esito a UnicoBPM; è pianificato in `routes/console.php` come
+`backup:nightly-run`, alle 02:00, con `withoutOverlapping()` e `onOneServer()` (richiede `CACHE_STORE` con driver condiviso — qui
 `database`, va bene).
+
+### Esito su UnicoBPM
+
+A fine run `App\Services\BpmReporter` invia a UnicoBPM (`POST {BPM_API_URL}/api/events`, chiave condivisa `BPM_BRIDGE_API_KEY`) l'evento
+`backup.esito`: `data.status` (`ok`/`failed`), `exit_codes` dei tre comandi, `databases` (per ciascuno `ok`, `size_kb`, o l'errore ridotto al
+tipo e a un breve inizio del messaggio), `databases_failed`, `databases_warnings`, `seconds`. L'`event_id` è fisso per server e minuto: un
+rinvio non duplica nulla. Senza URL o chiave non si invia nulla; se UnicoBPM non risponde si scrive un avviso nel log e l'esito del backup
+non cambia. L'esito per database lo lascia `backup:databases` in cache (`backup:last_databases`).
+
+### Database salvati
+
+`config/backup_paths.php › databases.only`: i database nuovi delle app collegate a unico-core (`unicooam_core`, `unicoloan_core`,
+`proforma_core`, `unicobpm_dev`, `unicoagent`) più gli originali finché non vengono dismessi. Il dump usa `--single-transaction
+--skip-lock-tables` (snapshot coerente; con LOCK TABLES una vista rotta faceva fallire tutto). `databases.tolerate_errors` elenca i database
+vecchi con viste non valide (oggi `proforma`): per loro il dump prosegue con `--force` e vale se supera i controlli di integrità, con un
+avviso nell'esito.
 
 ### Perché AWS CLI e non Flysystem S3
 

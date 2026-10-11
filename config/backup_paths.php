@@ -5,8 +5,18 @@ return [
         // Database di sistema da ignorare
         'ignored' => ['information_schema', 'performance_schema', 'mysql', 'sys'],
 
+        // Database vecchi con viste non valide (rimandano a tabelle che non esistono più): il dump prosegue con --force e vale se supera
+        // i controlli di integrità; nell'esito per UnicoBPM resta un avviso. Per gli altri un errore di dump è un fallimento.
+        'tolerate_errors' => ['proforma'],
+
         // Se popolato, esegue il backup SOLO di questi DB. Se vuoto [], fa il backup di TUTTI.
-        'only' => ['proforma', 'unicooam', 'unicobpm', 'unicoloan', 'whistle'],
+        //  - database nuovi delle app collegate a unico-core: unicooam_core (tabelle del pacchetto, condivise con unicobpm), unicoloan_core,
+        //    proforma_core, unicobpm_dev (processi), unicoagent;
+        //  - database originali: restano nel backup finché non vengono dismessi.
+        'only' => [
+            'unicooam_core', 'unicoloan_core', 'proforma_core', 'unicobpm_dev', 'unicoagent',
+            'proforma', 'unicooam', 'unicobpm', 'unicoloan', 'whistle',
+        ],
     ],
 
     // Credenziali usate per il dump (utente separato, idealmente in sola lettura)
@@ -55,5 +65,13 @@ return [
         'password' => env('REMOTE_BACKUP_PASSWORD'),
         'path' => env('REMOTE_BACKUP_PATH', '/home/ubuntu/backups'),
         'port' => env('REMOTE_BACKUP_PORT', 22),
+    ],
+
+    // UnicoBPM: a fine run notturno l'esito (ok/fallito, database salvati, codici di uscita) gli viene comunicato come evento `backup.esito`
+    // (POST {url}/api/events, chiave condivisa del bridge). Senza indirizzo o chiave non si invia nulla. Un fallimento qui non cambia l'esito del backup.
+    'bpm' => [
+        'url' => env('BPM_API_URL'),
+        'key' => env('BPM_BRIDGE_API_KEY'),
+        'timeout' => env('BPM_TIMEOUT', 10),
     ],
 ];

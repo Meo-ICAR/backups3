@@ -4,11 +4,13 @@ namespace App\Console\Commands;
 
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Spatie\DbDumper\Compressors\GzipCompressor;
 use Spatie\DbDumper\Databases\MySql;
+use Spatie\DbDumper\Exceptions\DumpFailed;
 
 class BackupDatabases extends Command
 {
@@ -30,6 +32,7 @@ class BackupDatabases extends Command
 
         $timestamp = now()->format('Y-m-d_H-i-s');
         $failedDbs = [];
+        $results = [];
 
         foreach ($databases as $dbName) {
             $dbName = trim($dbName);
@@ -42,13 +45,34 @@ class BackupDatabases extends Command
 
             try {
                 // 1. Dump compresso locale
-                MySql::create()
+                // Snapshot coerente senza LOCK TABLES: con il lock una vista che rimanda a tabelle inesistenti fa fallire tutto il dump.
+                $dumper = MySql::create()
                     ->setDbName($dbName)
                     ->setUserName(config('backup_paths.mysql.username'))
                     ->setPassword(config('backup_paths.mysql.password'))
                     ->setHost(config('backup_paths.mysql.host', '127.0.0.1'))
-                    ->useCompressor(new GzipCompressor)
-                    ->dumpToFile($localFile);
+                    ->useSingleTransaction()
+                    ->skipLockTables()
+                    ->useCompressor(new GzipCompressor);
+
+                $warning = null;
+                $tolerant = in_array($dbName, (array) config('backup_paths.databases.tolerate_errors', []), true);
+
+                if ($tolerant) {
+                    // Database vecchi con viste non valide: mysqldump prosegue (--force) e il dump vale se supera i controlli qui sotto.
+                    $dumper->addExtraOption('--force');
+                }
+
+                try {
+                    $dumper->dumpToFile($localFile);
+                } catch (DumpFailed $e) {
+                    if (! $tolerant || ! file_exists($localFile)) {
+                        throw $e;
+                    }
+
+                    $warning = 'dump completato con errori tollerati (viste non valide)';
+                    $this->warn(" [{$dbName}] {$warning}");
+                }
 
                 // 2. Verifiche di integrità
                 if (! file_exists($localFile) || filesize($localFile) < 1024) {
@@ -61,15 +85,21 @@ class BackupDatabases extends Command
                 }
 
                 $this->info(" Integrity Check OK per [{$dbName}] (".round(filesize($localFile) / 1024, 2).' KB)');
+                $results[] = ['name' => $dbName, 'ok' => true, 'size_kb' => (int) round(filesize($localFile) / 1024)] + ($warning ? ['warning' => $warning] : []);
 
             } catch (Exception $e) {
                 $this->error(" ERRORE durante il dump di [{$dbName}]: ".$e->getMessage());
                 $failedDbs[] = $dbName;
+                // Nell'esito solo il tipo di errore e l'inizio del messaggio: niente percorsi o credenziali.
+                $results[] = ['name' => $dbName, 'ok' => false, 'error' => class_basename($e).': '.mb_substr(preg_replace('/\s+/', ' ', $e->getMessage()), 0, 120)];
                 if (file_exists($localFile)) {
                     @unlink($localFile);
                 }
             }
         }
+
+        // L'esito per database serve al report notturno (NightlyBackup -> UnicoBPM).
+        Cache::put('backup:last_databases', ['at' => now()->toIso8601String(), 'databases' => $results], now()->addDays(2));
 
         // 3. Sincronizzazione della cartella locale dei DB verso le destinazioni configurate
         $targets = config('backup_paths.sync_targets', ['r2']);

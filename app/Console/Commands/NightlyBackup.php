@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Services\BpmReporter;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class NightlyBackup extends Command
+{
+    protected $signature = 'backup:nightly';
+
+    protected $description = 'Run notturno completo: backup dei database, sync degli upload, pulizia retention, poi heartbeat e esito a UnicoBPM';
+
+    public function handle(): int
+    {
+        $started = microtime(true);
+
+        $exitCodes = [
+            'databases' => $this->call('backup:databases'),
+            'uploads' => $this->call('backup:uploads'),
+            'clean' => $this->call('backup:clean'),
+        ];
+
+        $allOk = $exitCodes['databases'] === 0 && $exitCodes['uploads'] === 0 && $exitCodes['clean'] === 0;
+
+        if (! $allOk) {
+            Log::channel('single')->error('Backup notturno fallito', [
+                'backup:databases' => $exitCodes['databases'],
+                'backup:uploads' => $exitCodes['uploads'],
+                'backup:clean' => $exitCodes['clean'],
+            ]);
+        }
+
+        if ($pingUrl = config('backup_paths.heartbeat_url')) {
+            // Healthchecks.io e servizi compatibili: /fail segnala l'esito negativo del run
+            Http::timeout(10)->get($allOk ? $pingUrl : rtrim($pingUrl, '/').'/fail');
+        }
+
+        $databases = (array) (Cache::get('backup:last_databases')['databases'] ?? []);
+
+        if (BpmReporter::isConfigured() && ! BpmReporter::send(BpmReporter::payload($exitCodes, $databases, microtime(true) - $started))) {
+            $this->warn('Esito non comunicato a UnicoBPM (vedi log).');
+        }
+
+        return $allOk ? self::SUCCESS : self::FAILURE;
+    }
+}
