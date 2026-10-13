@@ -10,11 +10,11 @@ return [
         'tolerate_errors' => ['proforma'],
 
         // Se popolato, esegue il backup SOLO di questi DB. Se vuoto [], fa il backup di TUTTI.
-        //  - database nuovi delle app collegate a unico-core: unicooam_core (tabelle del pacchetto, condivise con unicobpm), unicoloan_core,
-        //    proforma_core, unicobpm_dev (processi), unicoagent;
+        //  - database nuovi delle app collegate a unico-core: unico_core_test, unicooam_core (tabelle del pacchetto, condivise con unicobpm),
+        //    unicoloan_core, proforma_core, unicobpm_dev (processi), unicoagent;
         //  - database originali: restano nel backup finché non vengono dismessi.
         'only' => [
-            'unicooam_core', 'unicoloan_core', 'proforma_core', 'unicobpm_dev', 'unicoagent',
+            'unico_core_test', 'unicooam_core', 'unicoloan_core', 'proforma_core', 'unicobpm_dev', 'unicoagent',
             'proforma', 'unicooam', 'unicobpm', 'unicoloan', 'whistle',
         ],
     ],
