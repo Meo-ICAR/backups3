@@ -14,9 +14,17 @@ return [
         //    unicoloan_core, proforma_core, unicobpm_dev (processi), unicoagent;
         //  - database originali: restano nel backup finché non vengono dismessi.
         'only' => [
-            'unico_core_test', 'unicooam_core', 'unicoloan_core', 'proforma_core', 'unicobpm_dev', 'unicoagent',
+            'unico_core_test', 'unicooam_core', 'unicoloan_core', 'proforma_core', 'unicobpm_dev', 'unicoagent', 'unicofinance',
             'proforma', 'unicooam', 'unicobpm', 'unicoloan', 'whistle',
         ],
+    ],
+
+    // Backup orari nel periodo di sviluppo (backup:hourly): dump locali, senza sincronizzazione remota, dei database in lavorazione.
+    // I dump orari più vecchi di `retention_hours` si eliminano; quelli notturni (backup:nightly) restano la copia di lungo periodo.
+    'hourly' => [
+        'enabled' => env('BACKUP_HOURLY', true),
+        'databases' => ['unico_core_test', 'unicofinance'],
+        'retention_hours' => (int) env('BACKUP_HOURLY_RETENTION_HOURS', 72),
     ],
 
     // Credenziali usate per il dump (utente separato, idealmente in sola lettura)

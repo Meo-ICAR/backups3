@@ -14,3 +14,11 @@ Schedule::command('backup:nightly')
     ->dailyAt('02:00')
     ->withoutOverlapping(120)
     ->onOneServer();
+
+// Backup orari dei database in lavorazione (unico_core_test, unicofinance) nel periodo di sviluppo: dump locali con retention breve.
+// Allo scheduler che parte ogni 10 minuti il minuto :00 è sempre servito.
+Schedule::command('backup:hourly')
+    ->name('backup:hourly-run')
+    ->hourly()
+    ->withoutOverlapping(30)
+    ->onOneServer();

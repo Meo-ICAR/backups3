@@ -10,7 +10,7 @@ class BackupDatabasesConfigTest extends TestCase
     {
         $only = config('backup_paths.databases.only');
 
-        foreach (['unico_core_test', 'unicooam_core', 'unicoloan_core', 'proforma_core', 'unicobpm_dev', 'unicoagent'] as $database) {
+        foreach (['unico_core_test', 'unicooam_core', 'unicoloan_core', 'proforma_core', 'unicobpm_dev', 'unicoagent', 'unicofinance'] as $database) {
             $this->assertContains($database, $only);
         }
 
