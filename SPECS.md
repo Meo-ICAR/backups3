@@ -1,6 +1,6 @@
 # BackupS3 — Specifiche di progetto
 
-Applicazione Laravel headless (nessuna UI web) che esegue backup notturni di
+Applicazione Laravel che esegue backup notturni di
 database MySQL e cartelle di upload verso **Cloudflare R2** (storage
 S3-compatibile). Pensata per girare su una VPS via cron/scheduler Laravel.
 
@@ -274,3 +274,28 @@ In ordine di impatto/costo:
   c'è un comando o una guida per il ripristino da un dump R2. Per uno
   strumento di backup è il gap più critico da colmare prima che serva
   davvero in un disaster recovery.
+
+## Pannello Filament (`/admin`)
+
+Accesso limitato alle email in `BACKUP_ADMIN_EMAILS` (utenti condivisi della suite, `App\Models\User::canAccessPanel`).
+
+- **Database** (`BackupDbResource`, tabella `backupdb`): server e database di cui si fa il backup. `backup:databases` salva quelli attivi per
+  questo server (`BackupDb::namesToBackUp()`); se la tabella è vuota usa `backup_paths.databases.only`. La migration `create_backupdb_tables`
+  parte dall'elenco di config.
+- **Backup su R2** (tabella `backupdb_files`): `backup:sync-remote` (04:00, dopo la retention) legge da R2 chiave, dimensione e data di ogni
+  `{server}/databases/{db}/{db}_{Y-m-d_H-i-s}.sql.gz` e li registra. Un database trovato solo su R2 si registra **non attivo**, per non finire
+  nel backup notturno. I backup tolti da R2 spariscono dall'elenco. Il pulsante «Aggiorna da R2» lancia lo stesso comando.
+- **Ripristino** (azione sul singolo backup, tabelle `backupdb_restores` e voce «Ripristini»): sempre nel MySQL di questo server, anche per backup di altri server (per questi solo in un database nuovo). Scarica il
+  dump con `aws s3 cp`, controlla `gzip -t`, crea il database e lo carica con `mysql`. Per default in un **nuovo** database
+  (`<db>_restore`); sull'originale solo scrivendo il nome del database. Gira dopo la risposta HTTP (`dispatchAfterResponse`), senza worker.
+  Il nome del database è validato (`[A-Za-z0-9_]+`) e passato alla shell come argomento, mai interpolato.
+- `App\Services\R2Cli` raccoglie le chiamate all'AWS CLI usate qui (elenco e download).
+- **Salva solo se cambiato** (`backupdb.only_if_changed`, default sì; `backup:databases --all` lo ignora): `backup:databases` fa sempre il dump e ne
+  calcola lo SHA-256 senza la riga «-- Dump completed on» (`DumpChangeDetector`). Se coincide con `last_dump_hash` e su R2 c'è già almeno un backup
+  del database, il file non si ricarica e si registra solo `last_checked_at`. L'hash dei dump caricati si scrive **dopo** la sincronizzazione riuscita,
+  così un caricamento fallito non fa risultare «invariato» il dump del giorno dopo. Nell'esito per UnicoBPM il database ha `unchanged: true`.
+- **Accesso SSO**: oltre alla password, pulsanti Microsoft e Google (`dutchcodingcompany/filament-socialite`, stessa configurazione di unicofinance). Si
+  collega solo un utente **già esistente** con la stessa email (non crea utenti) e l'accesso resta limitato a `BACKUP_ADMIN_EMAILS`. I collegamenti stanno
+  nella tabella condivisa `socialite_users` (token non salvati). Sui portali Azure e Google vanno registrati i redirect
+  `{APP_URL}/admin/oauth/callback/microsoft` e `/google`.
+- L'elenco **Database** è filtrato per server: di default quello da cui gira l'app (`backup_paths.destination_prefix`), il filtro «Server» mostra gli altri.

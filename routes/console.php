@@ -22,3 +22,10 @@ Schedule::command('backup:hourly')
     ->hourly()
     ->withoutOverlapping(30)
     ->onOneServer();
+
+// Elenco dei backup presenti su R2 (data e dimensione) per il pannello /admin; dopo il run notturno e le pulizie di retention.
+Schedule::command('backup:sync-remote')
+    ->name('backup:sync-remote-run')
+    ->dailyAt('04:00')
+    ->withoutOverlapping(30)
+    ->onOneServer();

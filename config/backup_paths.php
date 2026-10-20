@@ -82,4 +82,10 @@ return [
         'key' => env('BPM_BRIDGE_API_KEY'),
         'timeout' => env('BPM_TIMEOUT', 10),
     ],
+
+    // Pannello Filament (/admin): possono accedere solo questi indirizzi email (separati da virgola). Gli utenti sono quelli condivisi della suite.
+    'admin_emails' => array_filter(array_map('trim', explode(',', (string) env('BACKUP_ADMIN_EMAILS', '')))),
+
+    // Ripristino da R2: cartella in cui si scarica il dump prima di caricarlo.
+    'restore_directory' => storage_path('app/restores'),
 ];

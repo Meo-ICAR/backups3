@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\BackupDb;
+use App\Services\DumpChangeDetector;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -14,14 +16,14 @@ use Spatie\DbDumper\Exceptions\DumpFailed;
 
 class BackupDatabases extends Command
 {
-    protected $signature = 'backup:databases';
+    protected $signature = 'backup:databases {--all : Salva anche i database il cui dump è invariato}';
 
     protected $description = 'Esegue il dump locale dei database, ne verifica l\'integrità e li sincronizza sulle destinazioni configurate (R2 e/o VPS remota)';
 
-    public function handle(): int
+    public function handle(DumpChangeDetector $changes): int
     {
         $ignored = config('backup_paths.databases.ignored', []);
-        $only = config('backup_paths.databases.only', []);
+        $only = BackupDb::namesToBackUp() ?: config('backup_paths.databases.only', []);
 
         if (! empty($only)) {
             $databases = $only;
@@ -33,6 +35,9 @@ class BackupDatabases extends Command
         $timestamp = now()->format('Y-m-d_H-i-s');
         $failedDbs = [];
         $results = [];
+        // Hash dei dump da registrare solo dopo la sincronizzazione riuscita: se il caricamento fallisce, al giro dopo il dump non risulta «invariato».
+        $savedHashes = [];
+        $backupDbs = BackupDb::query()->where('server_name', config('backup_paths.destination_prefix'))->get()->keyBy('database_name');
 
         foreach ($databases as $dbName) {
             $dbName = trim($dbName);
@@ -85,7 +90,26 @@ class BackupDatabases extends Command
                 }
 
                 $this->info(" Integrity Check OK per [{$dbName}] (".round(filesize($localFile) / 1024, 2).' KB)');
-                $results[] = ['name' => $dbName, 'ok' => true, 'size_kb' => (int) round(filesize($localFile) / 1024)] + ($warning ? ['warning' => $warning] : []);
+
+                // 3. Dump invariato rispetto all'ultimo su R2: non si ricarica.
+                $backupDb = $backupDbs->get($dbName);
+                $hash = $backupDb ? $changes->hash($localFile) : null;
+                $sizeKb = (int) round(filesize($localFile) / 1024);
+
+                if ($backupDb && ! $this->option('all') && $changes->isUnchanged($backupDb, $hash)) {
+                    @unlink($localFile);
+                    $backupDb->update(['last_checked_at' => now()]);
+                    $this->info(" [{$dbName}] invariato dall'ultimo salvataggio: non viene ricaricato.");
+                    $results[] = ['name' => $dbName, 'ok' => true, 'size_kb' => $sizeKb, 'unchanged' => true];
+
+                    continue;
+                }
+
+                if ($backupDb) {
+                    $savedHashes[$dbName] = $hash;
+                }
+
+                $results[] = ['name' => $dbName, 'ok' => true, 'size_kb' => $sizeKb] + ($warning ? ['warning' => $warning] : []);
 
             } catch (Exception $e) {
                 $this->error(" ERRORE durante il dump di [{$dbName}]: ".$e->getMessage());
@@ -101,7 +125,7 @@ class BackupDatabases extends Command
         // L'esito per database serve al report notturno (NightlyBackup -> UnicoBPM).
         Cache::put('backup:last_databases', ['at' => now()->toIso8601String(), 'databases' => $results], now()->addDays(2));
 
-        // 3. Sincronizzazione della cartella locale dei DB verso le destinazioni configurate
+        // 4. Sincronizzazione della cartella locale dei DB verso le destinazioni configurate
         $targets = config('backup_paths.sync_targets', ['r2']);
         $syncFailed = false;
 
@@ -117,7 +141,11 @@ class BackupDatabases extends Command
             return self::FAILURE;
         }
 
-        // 4. Pulizia locali più vecchi di N giorni
+        foreach ($savedHashes as $dbName => $hash) {
+            $backupDbs->get($dbName)->update(['last_dump_hash' => $hash, 'last_checked_at' => now(), 'last_changed_at' => now()]);
+        }
+
+        // 5. Pulizia locali più vecchi di N giorni
         $this->cleanLocalBackups();
 
         return empty($failedDbs) ? self::SUCCESS : self::FAILURE;
