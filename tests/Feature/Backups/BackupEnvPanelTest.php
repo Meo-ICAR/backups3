@@ -126,6 +126,32 @@ class BackupEnvPanelTest extends BackupDbTestCase
         $this->assertSame(0, BackupEnvRestore::query()->count());
     }
 
+    public function test_the_header_backup_action_is_visible_and_backs_up_apps_on_this_server(): void
+    {
+        Bus::fake();
+
+        Livewire::test(ListBackupEnvs::class)
+            ->assertActionVisible('backup')
+            ->callAction('backup');
+
+        Bus::assertDispatchedAfterResponse(RunEnvBackup::class, function (RunEnvBackup $job): bool {
+            return $job->apps === ['unicoagent'];
+        });
+    }
+
+    public function test_the_header_backup_action_does_not_start_when_no_app_is_on_this_server(): void
+    {
+        Bus::fake();
+        $this->file->backupEnv->update(['server_name' => 'altro-server']);
+
+        Livewire::test(ListBackupEnvs::class)
+            ->assertActionVisible('backup')
+            ->callAction('backup');
+
+        Bus::assertNotDispatchedAfterResponse(RunEnvBackup::class);
+        $this->assertSame(0, BackupEnvRestore::query()->count());
+    }
+
     public function test_bulk_backup_runs_for_the_selected_apps_of_this_server(): void
     {
         Bus::fake();
