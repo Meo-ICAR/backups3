@@ -55,7 +55,7 @@ class SyncRemoteBackups extends Command
                         'backupdb_id' => $backupDb->id,
                         'backed_up_at' => Carbon::createFromFormat('Y-m-d_H-i-s', $m['ts']),
                         'size_bytes' => (int) $size,
-                        'r2_last_modified_at' => $modified ? Carbon::parse($modified) : null,
+                        'r2_last_modified_at' => $modified ? Carbon::parse($modified)->timezone(config('app.timezone')) : null,
                     ]);
 
                     continue;
@@ -70,7 +70,7 @@ class SyncRemoteBackups extends Command
                 );
                 $envSeen[$backupEnv->id] = true;
                 $envKeys[] = $key;
-                $modifiedAt = $modified ? Carbon::parse($modified) : now();
+                $modifiedAt = $modified ? Carbon::parse($modified)->timezone(config('app.timezone')) : now();
 
                 BackupEnvFile::query()->updateOrCreate(['r2_key' => $key], [
                     'backupenv_id' => $backupEnv->id,
