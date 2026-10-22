@@ -33,7 +33,15 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName('Backup')
+            ->brandName(function (): string {
+                $serverName = config('backup_paths.destination_prefix');
+
+                if (! is_string($serverName) || blank($serverName)) {
+                    return 'Backup';
+                }
+
+                return 'Backup · '.$serverName;
+            })
             ->colors([
                 'primary' => Color::Amber,
             ])

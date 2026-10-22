@@ -3,14 +3,20 @@
 namespace App\Filament\Resources\BackupEnvs\Tables;
 
 use App\Filament\Resources\BackupEnvs\RestoreEnvActions;
+use App\Jobs\RunEnvBackup;
 use App\Models\BackupEnv;
 use App\Models\BackupEnvRestore;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Number;
 
 class BackupEnvsTable
@@ -65,8 +71,48 @@ class BackupEnvsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    self::backupAction(),
                     RestoreEnvActions::bulk(),
                 ]),
             ]);
+    }
+
+    private static function backupAction(): BulkAction
+    {
+        return BulkAction::make('backup')
+            ->label('Backup')
+            ->icon('heroicon-o-key')
+            ->requiresConfirmation()
+            ->modalHeading('Backup dei file .env selezionati')
+            ->modalDescription('Parte la copia dei file .env di questo server, anche se non sono cambiati, e il file va su R2. Quelli di un altro server si saltano.')
+            ->modalSubmitActionLabel('Avvia il backup')
+            ->deselectRecordsAfterCompletion()
+            ->action(function (EloquentCollection|Collection|LazyCollection $records): void {
+                $names = $records
+                    ->filter(fn (BackupEnv $record): bool => $record->isOnThisServer())
+                    ->pluck('app_name')
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->all();
+
+                if ($names === []) {
+                    Notification::make()
+                        ->title('Nessun file .env di questo server')
+                        ->body('Il backup si esegue solo sulle app che girano qui.')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                RunEnvBackup::dispatchAfterResponse($names);
+
+                Notification::make()
+                    ->title('Backup avviato')
+                    ->body(implode(', ', $names))
+                    ->success()
+                    ->send();
+            });
     }
 }

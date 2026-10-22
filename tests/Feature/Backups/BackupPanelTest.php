@@ -43,6 +43,12 @@ class BackupPanelTest extends BackupDbTestCase
         ]);
     }
 
+    public function test_the_header_shows_the_current_server_name(): void
+    {
+        $this->get('/admin/database')
+            ->assertSee('Backup · srv-test', false);
+    }
+
     public function test_the_list_shows_server_database_and_last_backup(): void
     {
         $this->get('/admin/database')->assertOk();

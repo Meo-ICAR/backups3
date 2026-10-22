@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Process;
 
 class BackupEnvFiles extends Command
 {
-    protected $signature = 'backup:env';
+    protected $signature = 'backup:env {--all : Salva anche i file .env il cui contenuto è invariato} {--app=* : Solo queste app}';
 
     protected $description = 'Copia i file .env delle app del server e sincronizza solo quelli il cui contenuto è cambiato, senza stamparlo';
 
@@ -23,8 +23,39 @@ class BackupEnvFiles extends Command
         }
 
         $files = $this->envFiles($root);
+        $requested = $this->requestedApps();
+        $failed = false;
+
+        if ($requested !== []) {
+            $selected = [];
+
+            foreach ($requested as $app) {
+                if (! preg_match('/^[A-Za-z0-9._-]+$/', $app)) {
+                    $this->error('Nome dell\'app non valido.');
+                    $failed = true;
+
+                    continue;
+                }
+
+                if (! isset($files[$app])) {
+                    $this->error("File .env assente per [{$app}]");
+                    $failed = true;
+
+                    continue;
+                }
+
+                $selected[$app] = $files[$app];
+            }
+
+            ksort($selected);
+            $files = $selected;
+        }
 
         if ($files === []) {
+            if ($failed) {
+                return self::FAILURE;
+            }
+
             $this->warn("Nessun file .env trovato in {$root}");
 
             return self::SUCCESS;
@@ -32,7 +63,6 @@ class BackupEnvFiles extends Command
 
         $previous = $this->storedHashes();
         $changed = [];
-        $failed = false;
 
         foreach ($files as $app => $path) {
             $hash = hash_file('sha256', $path);
@@ -44,7 +74,7 @@ class BackupEnvFiles extends Command
                 continue;
             }
 
-            if (($previous[$app] ?? null) === $hash) {
+            if (! $this->option('all') && ($previous[$app] ?? null) === $hash) {
                 $this->info("Invariato [{$app}]");
 
                 continue;
@@ -131,6 +161,19 @@ class BackupEnvFiles extends Command
         ksort($files);
 
         return $files;
+    }
+
+    /**
+     * Nomi passati con --app. Vuoto: tutte le app con un file .env.
+     *
+     * @return array<int, string>
+     */
+    private function requestedApps(): array
+    {
+        return array_values(array_unique(array_filter(array_map(
+            fn (mixed $name): string => trim((string) $name),
+            (array) $this->option('app'),
+        ), fn (string $name): bool => $name !== '')));
     }
 
     private function syncToR2(string $staging): bool

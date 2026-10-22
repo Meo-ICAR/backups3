@@ -112,6 +112,52 @@ class BackupEnvFilesCommandTest extends TestCase
         Process::assertRanTimes(fn ($process): bool => ($process->command[0] ?? '') === 'aws', times: 1);
     }
 
+    public function test_it_copies_only_the_requested_apps(): void
+    {
+        $this->appEnv('unicoagent', "DB_PASSWORD=super-secret-value\n");
+        $this->appEnv('unicobpm', "APP_KEY=base64:another-secret\n");
+        Process::fake();
+
+        $this->artisan('backup:env', ['--app' => ['unicoagent']])
+            ->expectsOutputToContain('Copiato [unicoagent]')
+            ->doesntExpectOutputToContain('unicobpm')
+            ->doesntExpectOutputToContain('super-secret-value')
+            ->assertSuccessful();
+
+        $this->assertSame("DB_PASSWORD=super-secret-value\n", file_get_contents($this->staging.'/unicoagent/.env'));
+        $this->assertFileDoesNotExist($this->staging.'/unicobpm/.env');
+    }
+
+    public function test_it_copies_an_unchanged_env_when_forced(): void
+    {
+        $this->appEnv('unicoagent', "DB_PASSWORD=super-secret-value\n");
+        Process::fake();
+
+        $this->artisan('backup:env', ['--app' => ['unicoagent']])->assertSuccessful();
+
+        $this->artisan('backup:env', ['--app' => ['unicoagent'], '--all' => true])
+            ->expectsOutputToContain('Copiato [unicoagent]')
+            ->doesntExpectOutputToContain('Invariato [unicoagent]')
+            ->doesntExpectOutputToContain('super-secret-value')
+            ->assertSuccessful();
+
+        Process::assertRanTimes(fn ($process): bool => ($process->command[0] ?? '') === 'aws', times: 2);
+    }
+
+    public function test_it_fails_when_a_requested_app_has_no_env_file(): void
+    {
+        $this->appEnv('unicoagent', "A=1\n");
+        Process::fake();
+
+        $this->artisan('backup:env', ['--app' => ['manca', 'unicoagent']])
+            ->expectsOutputToContain('File .env assente per [manca]')
+            ->expectsOutputToContain('Copiato [unicoagent]')
+            ->assertExitCode(1);
+
+        $this->assertSame("A=1\n", file_get_contents($this->staging.'/unicoagent/.env'));
+        $this->assertFileDoesNotExist($this->state);
+    }
+
     public function test_it_syncs_only_the_env_that_changed(): void
     {
         $this->appEnv('unicoagent', "A=1\n");

@@ -6,6 +6,7 @@ use App\Filament\Resources\BackupEnvs\Pages\ListBackupEnvs;
 use App\Filament\Resources\BackupEnvs\Pages\ViewBackupEnv;
 use App\Filament\Resources\BackupEnvs\RelationManagers\FilesRelationManager;
 use App\Jobs\RestoreEnvFile;
+use App\Jobs\RunEnvBackup;
 use App\Models\BackupEnv;
 use App\Models\BackupEnvFile;
 use App\Models\BackupEnvRestore;
@@ -123,6 +124,31 @@ class BackupEnvPanelTest extends BackupDbTestCase
             ->assertHasFormErrors(['mode']);
 
         $this->assertSame(0, BackupEnvRestore::query()->count());
+    }
+
+    public function test_bulk_backup_runs_for_the_selected_apps_of_this_server(): void
+    {
+        Bus::fake();
+        $proforma = BackupEnv::query()->create(['server_name' => 'srv-test', 'app_name' => 'proforma']);
+
+        Livewire::test(ListBackupEnvs::class)
+            ->callTableBulkAction('backup', [$this->file->backupEnv, $proforma]);
+
+        Bus::assertDispatchedAfterResponse(RunEnvBackup::class, function (RunEnvBackup $job): bool {
+            return $job->apps === ['proforma', 'unicoagent'];
+        });
+    }
+
+    public function test_bulk_backup_does_not_start_for_an_app_on_another_server(): void
+    {
+        Bus::fake();
+        $other = BackupEnv::query()->create(['server_name' => 'altro-server', 'app_name' => 'unicobpm']);
+
+        Livewire::test(ListBackupEnvs::class)
+            ->filterTable('server_name', 'altro-server')
+            ->callTableBulkAction('backup', [$other]);
+
+        Bus::assertNotDispatchedAfterResponse(RunEnvBackup::class);
     }
 
     public function test_bulk_restore_uses_the_current_copy_as_env_restore(): void
