@@ -16,21 +16,40 @@ use Spatie\DbDumper\Exceptions\DumpFailed;
 
 class BackupDatabases extends Command
 {
-    protected $signature = 'backup:databases {--all : Salva anche i database il cui dump è invariato}';
+    protected $signature = 'backup:databases {--all : Salva anche i database il cui dump è invariato} {--database=* : Solo questi database}';
 
     protected $description = 'Esegue il dump locale dei database, ne verifica l\'integrità e li sincronizza sulle destinazioni configurate (R2 e/o VPS remota)';
 
-    public function handle(DumpChangeDetector $changes): int
+    /**
+     * Nomi da salvare: quelli passati con --database, altrimenti l'elenco del pannello (o la configurazione).
+     *
+     * @return array<int, string>
+     */
+    public function databaseNames(): array
     {
-        $ignored = config('backup_paths.databases.ignored', []);
+        $requested = array_values(array_filter(array_map(
+            fn (mixed $name): string => trim((string) $name),
+            (array) $this->option('database'),
+        ), fn (string $name): bool => $name !== ''));
+
+        if ($requested !== []) {
+            return $requested;
+        }
+
         $only = BackupDb::namesToBackUp() ?: config('backup_paths.databases.only', []);
 
-        if (! empty($only)) {
-            $databases = $only;
-        } else {
-            $allDbs = array_column(DB::select('SHOW DATABASES'), 'Database');
-            $databases = array_diff($allDbs, $ignored);
+        if ($only !== []) {
+            return array_values($only);
         }
+
+        $ignored = config('backup_paths.databases.ignored', []);
+
+        return array_values(array_diff(array_column(DB::select('SHOW DATABASES'), 'Database'), $ignored));
+    }
+
+    public function handle(DumpChangeDetector $changes): int
+    {
+        $databases = $this->databaseNames();
 
         $timestamp = now()->format('Y-m-d_H-i-s');
         $failedDbs = [];
@@ -41,6 +60,15 @@ class BackupDatabases extends Command
 
         foreach ($databases as $dbName) {
             $dbName = trim($dbName);
+
+            if (! preg_match('/^[A-Za-z0-9_]+$/', $dbName)) {
+                $this->error(' ERRORE durante il dump: nome del database non valido.');
+                $failedDbs[] = $dbName;
+                $results[] = ['name' => 'invalid', 'ok' => false, 'error' => 'nome del database non valido'];
+
+                continue;
+            }
+
             $this->info("Inizio backup DB: [{$dbName}]");
 
             $localFolder = storage_path("app/backups/databases/{$dbName}");

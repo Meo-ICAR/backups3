@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Backups;
 
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 abstract class BackupDbTestCase extends TestCase
@@ -9,6 +10,12 @@ abstract class BackupDbTestCase extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Schema::disableForeignKeyConstraints();
+        Schema::dropIfExists('backupdb_restores');
+        Schema::dropIfExists('backupdb_files');
+        Schema::dropIfExists('backupdb');
+        Schema::enableForeignKeyConstraints();
 
         config([
             'backup_paths.destination_prefix' => 'srv-test',

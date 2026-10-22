@@ -6,6 +6,7 @@ use App\Filament\Resources\BackupDbs\Pages\EditBackupDb;
 use App\Filament\Resources\BackupDbs\Pages\ListBackupDbs;
 use App\Filament\Resources\BackupDbs\RelationManagers\FilesRelationManager;
 use App\Jobs\RestoreBackup;
+use App\Jobs\RunDatabaseBackup;
 use App\Models\BackupDb;
 use App\Models\BackupDbFile;
 use App\Models\BackupDbRestore;
@@ -13,6 +14,7 @@ use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
 
 class BackupPanelTest extends BackupDbTestCase
@@ -23,6 +25,9 @@ class BackupPanelTest extends BackupDbTestCase
     {
         parent::setUp();
 
+        Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
         (require database_path('migrations/0001_01_01_000000_create_users_table.php'))->up();
         config(['backup_paths.admin_emails' => ['admin@example.com']]);
 
@@ -125,5 +130,102 @@ class BackupPanelTest extends BackupDbTestCase
         $restore = BackupDbRestore::query()->firstOrFail();
         $this->assertFalse($restore->overwrites_original);
         Bus::assertDispatchedAfterResponse(RestoreBackup::class);
+    }
+
+    public function test_bulk_backup_runs_for_the_selected_databases_of_this_server(): void
+    {
+        Bus::fake();
+        $proforma = BackupDb::query()->create(['server_name' => 'srv-test', 'database_name' => 'proforma']);
+
+        Livewire::test(ListBackupDbs::class)
+            ->callTableBulkAction('backup', [$this->file->backupDb, $proforma]);
+
+        Bus::assertDispatchedAfterResponse(RunDatabaseBackup::class, function (RunDatabaseBackup $job): bool {
+            return $job->databases === ['alfa', 'proforma'];
+        });
+    }
+
+    public function test_bulk_backup_does_not_start_for_a_database_on_another_server(): void
+    {
+        Bus::fake();
+        $other = BackupDb::query()->create(['server_name' => 'altro-server', 'database_name' => 'beta']);
+
+        Livewire::test(ListBackupDbs::class)
+            ->filterTable('server_name', 'altro-server')
+            ->callTableBulkAction('backup', [$other]);
+
+        Bus::assertNotDispatchedAfterResponse(RunDatabaseBackup::class);
+    }
+
+    public function test_bulk_restore_uses_the_latest_backup_in_a_new_database(): void
+    {
+        Bus::fake();
+        $latest = BackupDbFile::query()->create([
+            'backupdb_id' => $this->file->backupDb->id,
+            'r2_key' => 'srv-test/databases/alfa/alfa_2026-10-21_02-00-00.sql.gz',
+            'backed_up_at' => '2026-10-21 02:00:00',
+            'size_bytes' => 10,
+        ]);
+
+        Livewire::test(ListBackupDbs::class)
+            ->callTableBulkAction('ripristina', [$this->file->backupDb], ['mode' => 'nuovo'])
+            ->assertHasNoFormErrors();
+
+        $restore = BackupDbRestore::query()->firstOrFail();
+        $this->assertSame($latest->id, $restore->backupdb_file_id);
+        $this->assertSame('alfa_restore', $restore->target_database);
+        $this->assertFalse($restore->overwrites_original);
+        Bus::assertDispatchedAfterResponse(RestoreBackup::class);
+    }
+
+    public function test_bulk_restore_skips_a_database_that_has_no_backup(): void
+    {
+        Bus::fake();
+        $empty = BackupDb::query()->create(['server_name' => 'srv-test', 'database_name' => 'vuoto']);
+
+        Livewire::test(ListBackupDbs::class)
+            ->callTableBulkAction('ripristina', [$this->file->backupDb, $empty], ['mode' => 'nuovo'])
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(1, BackupDbRestore::query()->count());
+        $this->assertSame('alfa_restore', BackupDbRestore::query()->value('target_database'));
+    }
+
+    public function test_bulk_restore_over_the_originals_requires_typing_sovrascrivi(): void
+    {
+        Bus::fake();
+        $page = fn () => Livewire::test(ListBackupDbs::class);
+
+        $page()->callTableBulkAction('ripristina', [$this->file->backupDb], ['mode' => 'originale', 'conferma' => 'sbagliato'])
+            ->assertHasFormErrors(['conferma']);
+        $this->assertSame(0, BackupDbRestore::query()->count());
+
+        $page()->callTableBulkAction('ripristina', [$this->file->backupDb], ['mode' => 'originale', 'conferma' => 'sovrascrivi'])
+            ->assertHasNoFormErrors();
+
+        $restore = BackupDbRestore::query()->firstOrFail();
+        $this->assertTrue($restore->overwrites_original);
+        $this->assertSame('alfa', $restore->target_database);
+        Bus::assertDispatchedAfterResponse(RestoreBackup::class);
+    }
+
+    public function test_bulk_restore_cannot_overwrite_a_database_from_another_server(): void
+    {
+        Bus::fake();
+        $other = BackupDb::query()->create(['server_name' => 'altro-server', 'database_name' => 'beta']);
+        BackupDbFile::query()->create([
+            'backupdb_id' => $other->id,
+            'r2_key' => 'altro-server/databases/beta/beta_2026-10-20_02-00-00.sql.gz',
+            'backed_up_at' => '2026-10-20 02:00:00',
+            'size_bytes' => 1,
+        ]);
+
+        Livewire::test(ListBackupDbs::class)
+            ->filterTable('server_name', 'altro-server')
+            ->callTableBulkAction('ripristina', [$other], ['mode' => 'originale', 'conferma' => 'sovrascrivi'])
+            ->assertHasFormErrors(['mode']);
+
+        $this->assertSame(0, BackupDbRestore::query()->count());
+        Bus::assertNotDispatchedAfterResponse(RestoreBackup::class);
     }
 }
