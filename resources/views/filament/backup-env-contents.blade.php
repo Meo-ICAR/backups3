@@ -7,6 +7,6 @@
         spellcheck="false"
         autocomplete="off"
         class="fi-input block w-full font-mono text-sm"
-        style="min-height: 28rem; white-space: pre"
+        style="width: 100%; min-height: 28rem; white-space: pre; box-sizing: border-box"
     >{{ $contents }}</textarea>
 @endif

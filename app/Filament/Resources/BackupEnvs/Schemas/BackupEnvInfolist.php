@@ -14,14 +14,15 @@ class BackupEnvInfolist
     {
         return $schema
             ->components([
-                TextEntry::make('server_name')->label('Server'),
-                TextEntry::make('app_name')->label('App'),
-                TextEntry::make('latestFile.backed_up_at')->label('Ultimo backup')->dateTime('d/m/Y H:i')->placeholder('—'),
+                TextEntry::make('server_name')->label('Server')->columnSpanFull(),
+                TextEntry::make('app_name')->label('App')->columnSpanFull(),
+                TextEntry::make('latestFile.backed_up_at')->label('Ultimo backup')->dateTime('d/m/Y H:i')->placeholder('—')->columnSpanFull(),
                 TextEntry::make('latestFile.size_bytes')
                     ->label('Dimensione')
                     ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : Number::fileSize($state, precision: 1))
-                    ->placeholder('—'),
-                TextEntry::make('latestFile.r2_key')->label('File su R2')->placeholder('—'),
+                    ->placeholder('—')
+                    ->columnSpanFull(),
+                TextEntry::make('latestFile.r2_key')->label('File su R2')->placeholder('—')->columnSpanFull(),
                 ViewEntry::make('contenuto')
                     ->label('Contenuto del .env')
                     ->view('filament.backup-env-contents', function (ViewEntry $entry): array {
