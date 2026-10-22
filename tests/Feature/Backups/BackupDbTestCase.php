@@ -12,6 +12,9 @@ abstract class BackupDbTestCase extends TestCase
         parent::setUp();
 
         Schema::disableForeignKeyConstraints();
+        Schema::dropIfExists('backupenv_restores');
+        Schema::dropIfExists('backupenv_files');
+        Schema::dropIfExists('backupenv');
         Schema::dropIfExists('backupdb_restores');
         Schema::dropIfExists('backupdb_files');
         Schema::dropIfExists('backupdb');
@@ -28,7 +31,7 @@ abstract class BackupDbTestCase extends TestCase
         ]);
 
         // Solo le tabelle del pannello: le altre migration dell'app sono scritte per MySQL.
-        foreach (['2026_10_21_100000_create_backupdb_tables', '2026_10_21_110000_add_change_detection_to_backupdb'] as $migration) {
+        foreach (['2026_10_21_100000_create_backupdb_tables', '2026_10_21_110000_add_change_detection_to_backupdb', '2026_10_22_114318_create_backupenv_tables'] as $migration) {
             (require database_path("migrations/{$migration}.php"))->up();
         }
     }

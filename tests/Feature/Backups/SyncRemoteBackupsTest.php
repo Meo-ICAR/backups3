@@ -4,6 +4,8 @@ namespace Tests\Feature\Backups;
 
 use App\Models\BackupDb;
 use App\Models\BackupDbFile;
+use App\Models\BackupEnv;
+use App\Models\BackupEnvFile;
 use Illuminate\Support\Facades\Process;
 
 class SyncRemoteBackupsTest extends BackupDbTestCase
@@ -68,6 +70,32 @@ class SyncRemoteBackupsTest extends BackupDbTestCase
         $this->artisan('backup:sync-remote')->assertSuccessful();
 
         $this->assertSame(1, BackupDbFile::query()->count());
+    }
+
+    public function test_it_registers_env_files_and_drops_one_removed_from_r2(): void
+    {
+        $this->listing([
+            ['srv-test/env/unicoagent/.env', 4136, '2026-10-22T09:36:43+00:00'],
+            ['altro-server/env/unicobpm/.env', 100, '2026-10-22T09:36:43+00:00'],
+            ['srv-test/env/solo-example/.env.example', 10, '2026-10-22T09:36:43+00:00'],
+        ]);
+
+        $this->artisan('backup:sync-remote')->assertSuccessful();
+        $this->artisan('backup:sync-remote')->assertSuccessful();
+
+        $this->assertSame(2, BackupEnvFile::query()->count());
+        $file = BackupEnvFile::query()->where('r2_key', 'srv-test/env/unicoagent/.env')->firstOrFail();
+        $this->assertSame(4136, $file->size_bytes);
+        $this->assertSame('unicoagent', $file->backupEnv->app_name);
+        $this->assertSame('srv-test', $file->backupEnv->server_name);
+        $this->assertSame('altro-server', BackupEnv::query()->where('app_name', 'unicobpm')->value('server_name'));
+        $this->assertNull(BackupEnv::query()->where('app_name', 'solo-example')->first());
+
+        $this->listing([['srv-test/env/unicoagent/.env', 4136, '2026-10-22T09:36:43+00:00']]);
+        $this->artisan('backup:sync-remote')->assertSuccessful();
+
+        $this->assertSame(1, BackupEnvFile::query()->count());
+        $this->assertSame('unicoagent', BackupEnvFile::query()->firstOrFail()->backupEnv->app_name);
     }
 
     public function test_it_fails_without_r2_configuration_and_when_aws_fails(): void

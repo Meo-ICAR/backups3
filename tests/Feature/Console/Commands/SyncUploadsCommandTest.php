@@ -16,6 +16,8 @@ class SyncUploadsCommandTest extends TestCase
             'filesystems.disks.r2.endpoint' => 'https://example.r2.cloudflarestorage.com',
             'filesystems.disks.r2.key' => 'fake-key',
             'filesystems.disks.r2.secret' => 'fake-secret',
+            // Il prefisso di destinazione è l'hostname della macchina: nei test non ce n'è.
+            'backup_paths.destination_prefix' => '',
         ]);
     }
 

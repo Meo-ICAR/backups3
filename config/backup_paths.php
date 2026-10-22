@@ -47,6 +47,14 @@ return [
         'whitelist_evidence' => '/var/www/html/whitelist/storage/app/private',
     ],
 
+    // File .env delle app sul server (backup:env). Si copia solo il file chiamato .env, non .env.example.
+    // Si risincronizza un file solo se il suo contenuto è cambiato rispetto all'ultimo invio riuscito.
+    'env' => [
+        'root' => env('BACKUP_ENV_ROOT', '/var/www/html'),
+        'staging' => storage_path('app/backups/env'),
+        'state' => storage_path('app/backups/env-hashes.json'),
+    ],
+
     // Quanti giorni mantenere i dump locali sulla VPS per ripristini rapidi
     'local_retention_days' => 7,
 

@@ -12,7 +12,7 @@ class NightlyBackup extends Command
 {
     protected $signature = 'backup:nightly';
 
-    protected $description = 'Run notturno completo: backup dei database, sync degli upload, pulizia retention, poi heartbeat e esito a UnicoBPM';
+    protected $description = 'Run notturno completo: backup dei database, sync degli upload e dei file .env, pulizia retention, poi heartbeat e esito a UnicoBPM';
 
     public function handle(): int
     {
@@ -21,17 +21,14 @@ class NightlyBackup extends Command
         $exitCodes = [
             'databases' => $this->call('backup:databases'),
             'uploads' => $this->call('backup:uploads'),
+            'env' => $this->call('backup:env'),
             'clean' => $this->call('backup:clean'),
         ];
 
-        $allOk = $exitCodes['databases'] === 0 && $exitCodes['uploads'] === 0 && $exitCodes['clean'] === 0;
+        $allOk = collect($exitCodes)->every(fn (int $code): bool => $code === 0);
 
         if (! $allOk) {
-            Log::channel('single')->error('Backup notturno fallito', [
-                'backup:databases' => $exitCodes['databases'],
-                'backup:uploads' => $exitCodes['uploads'],
-                'backup:clean' => $exitCodes['clean'],
-            ]);
+            Log::channel('single')->error('Backup notturno fallito', $exitCodes);
         }
 
         if ($pingUrl = config('backup_paths.heartbeat_url')) {

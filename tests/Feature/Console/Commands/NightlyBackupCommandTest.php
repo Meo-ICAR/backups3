@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console\Commands;
 
 use App\Services\BpmReporter;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -26,11 +27,12 @@ class NightlyBackupCommandTest extends TestCase
         ]]);
     }
 
-    /** Sostituisce i tre comandi veri con dei finti che ritornano i codici indicati. */
-    private function stubCommands(int $databases = 0, int $uploads = 0, int $clean = 0): void
+    /** Sostituisce i comandi veri con dei finti che ritornano i codici indicati. */
+    private function stubCommands(int $databases = 0, int $uploads = 0, int $env = 0, int $clean = 0): void
     {
         Artisan::command('backup:databases', fn () => $databases);
         Artisan::command('backup:uploads', fn () => $uploads);
+        Artisan::command('backup:env', fn () => $env);
         Artisan::command('backup:clean', fn () => $clean);
     }
 
@@ -47,10 +49,21 @@ class NightlyBackupCommandTest extends TestCase
                 && $request->header('X-Api-Key') === ['chiave-bpm']
                 && $request['event'] === 'backup.esito' && $request['source'] === 'backups3'
                 && $request['data']['status'] === 'ok' && $request['data']['server'] === 'vps-test'
-                && $request['data']['exit_codes'] === ['databases' => 0, 'uploads' => 0, 'clean' => 0]
+                && $request['data']['exit_codes'] === ['databases' => 0, 'uploads' => 0, 'env' => 0, 'clean' => 0]
                 && str_starts_with($request['event_id'], 'backup.esito:vps-test:')
                 && $request['subject_ref'] === 'vps-test:'.now()->format('Y-m-d');
         });
+    }
+
+    public function test_a_failed_env_backup_fails_the_nightly_run(): void
+    {
+        $this->stubCommands(env: 1);
+        Http::fake(['*' => Http::response([], 202)]);
+
+        $this->artisan('backup:nightly')->assertExitCode(1);
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://hc.example.com/uuid/fail');
+        Http::assertSent(fn ($request) => ($request['data']['exit_codes']['env'] ?? null) === 1);
     }
 
     public function test_a_failed_run_pings_fail_and_reports_failed_with_the_databases_that_did_not_dump(): void
@@ -103,7 +116,7 @@ class NightlyBackupCommandTest extends TestCase
 
     public function test_the_nightly_run_is_scheduled_at_two_in_the_morning(): void
     {
-        $event = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())->first(fn ($e) => str_contains((string) $e->command, 'backup:nightly'));
+        $event = collect(app(Schedule::class)->events())->first(fn ($e) => str_contains((string) $e->command, 'backup:nightly'));
 
         $this->assertNotNull($event);
         $this->assertSame('0 2 * * *', $event->expression);

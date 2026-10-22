@@ -19,7 +19,7 @@ class BpmReporter
     }
 
     /**
-     * @param  array{databases: int, uploads: int, clean: int}  $exitCodes
+     * @param  array<string, int>  $exitCodes
      * @param  list<array{name: string, ok: bool, size_kb?: int, error?: string, warning?: string}>  $databases
      * @return array<string,mixed>
      */
@@ -27,7 +27,7 @@ class BpmReporter
     {
         $now ??= now();
         $prefix = trim((string) config('backup_paths.destination_prefix'), '/') ?: 'server';
-        $ok = $exitCodes['databases'] === 0 && $exitCodes['uploads'] === 0 && $exitCodes['clean'] === 0;
+        $ok = collect($exitCodes)->every(fn (int $code): bool => $code === 0);
 
         return [
             'event_id' => "backup.esito:{$prefix}:".$now->format('Y-m-d_H-i'),
