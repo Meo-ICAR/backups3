@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Console\Commands;
 
+use App\Mail\BackupFailed;
 use App\Services\BpmReporter;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class NightlyBackupCommandTest extends TestCase
@@ -24,7 +26,9 @@ class NightlyBackupCommandTest extends TestCase
         Cache::put('backup:last_databases', ['at' => now()->toIso8601String(), 'databases' => [
             ['name' => 'unicooam_core', 'ok' => true, 'size_kb' => 2048],
             ['name' => 'unicoloan_core', 'ok' => false, 'error' => 'RuntimeException: dump fallito'],
-        ]]);
+        ], 'destinations' => ['r2' => true]]);
+        config(['backup_paths.admin_emails' => ['admin@example.com']]);
+        Mail::fake();
     }
 
     /** Sostituisce i comandi veri con dei finti che ritornano i codici indicati. */
@@ -120,5 +124,47 @@ class NightlyBackupCommandTest extends TestCase
 
         $this->assertNotNull($event);
         $this->assertSame('0 2 * * *', $event->expression);
+    }
+
+    public function test_a_failed_run_emails_the_administrators_even_when_bpm_does_not_answer(): void
+    {
+        $this->stubCommands(databases: 1);
+        Http::fake(['https://bpm.example.com/*' => Http::response('boom', 503), '*' => Http::response([], 200)]);
+
+        $this->artisan('backup:nightly')->expectsOutputToContain('Avviso di fallimento inviato a admin@example.com')->assertExitCode(1);
+
+        Mail::assertSent(BackupFailed::class, function (BackupFailed $mail): bool {
+            $text = $mail->render();
+
+            return $mail->hasTo('admin@example.com') && ! $mail->bpmInformed
+                && str_contains($text, 'unicoloan_core: RuntimeException: dump fallito')
+                && str_contains($text, 'R2: ok')
+                && str_contains($text, '1 salvati, 0 invariati, 1 falliti')
+                && str_contains($text, 'questa email è l\'unico avviso');
+        });
+    }
+
+    public function test_a_successful_run_sends_no_email_and_reports_destinations_and_counts_to_bpm(): void
+    {
+        $this->stubCommands();
+        Http::fake(['*' => Http::response([], 202)]);
+
+        $this->artisan('backup:nightly')->expectsOutputToContain('Backup notturno completato.')->assertExitCode(0);
+
+        Mail::assertNothingSent();
+        Http::assertSent(fn ($request) => $request->url() === 'https://bpm.example.com/api/events'
+            && $request['data']['destinations'] === ['r2' => true]
+            && $request['data']['counts'] === ['saved' => 1, 'unchanged' => 0, 'failed' => 1]);
+    }
+
+    public function test_failure_emails_can_be_turned_off(): void
+    {
+        config(['backup_paths.notify_failures' => false]);
+        $this->stubCommands(clean: 1);
+        Http::fake(['*' => Http::response([], 202)]);
+
+        $this->artisan('backup:nightly')->assertExitCode(1);
+
+        Mail::assertNothingSent();
     }
 }

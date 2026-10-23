@@ -20,10 +20,11 @@ class BpmReporter
 
     /**
      * @param  array<string, int>  $exitCodes
-     * @param  list<array{name: string, ok: bool, size_kb?: int, error?: string, warning?: string}>  $databases
+     * @param  list<array{name: string, ok: bool, size_kb?: int, error?: string, warning?: string, unchanged?: bool}>  $databases
+     * @param  array<string, bool>  $destinations  Esito della copia dei dump per destinazione (r2, vps).
      * @return array<string,mixed>
      */
-    public static function payload(array $exitCodes, array $databases, float $seconds, ?\DateTimeInterface $now = null): array
+    public static function payload(array $exitCodes, array $databases, float $seconds, ?\DateTimeInterface $now = null, array $destinations = []): array
     {
         $now ??= now();
         $prefix = trim((string) config('backup_paths.destination_prefix'), '/') ?: 'server';
@@ -42,6 +43,12 @@ class BpmReporter
                 'databases' => $databases,
                 'databases_failed' => array_values(array_column(array_filter($databases, fn (array $d): bool => ! $d['ok']), 'name')),
                 'databases_warnings' => array_values(array_column(array_filter($databases, fn (array $d): bool => isset($d['warning'])), 'name')),
+                'destinations' => $destinations,
+                'counts' => [
+                    'saved' => count(array_filter($databases, fn (array $d): bool => $d['ok'] && empty($d['unchanged']))),
+                    'unchanged' => count(array_filter($databases, fn (array $d): bool => $d['ok'] && ! empty($d['unchanged']))),
+                    'failed' => count(array_filter($databases, fn (array $d): bool => ! $d['ok'])),
+                ],
                 'seconds' => (int) round($seconds),
             ],
         ];

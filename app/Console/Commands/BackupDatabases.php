@@ -150,22 +150,27 @@ class BackupDatabases extends Command
             }
         }
 
-        // L'esito per database serve al report notturno (NightlyBackup -> UnicoBPM).
-        Cache::put('backup:last_databases', ['at' => now()->toIso8601String(), 'databases' => $results], now()->addDays(2));
-
         // 4. Sincronizzazione della cartella locale dei DB verso le destinazioni configurate
-        $targets = config('backup_paths.sync_targets', ['r2']);
-        $syncFailed = false;
+        $destinations = [];
 
-        if (in_array('r2', $targets, true) && ! $this->syncToR2()) {
-            $syncFailed = true;
+        foreach ((array) config('backup_paths.sync_targets', ['r2']) as $target) {
+            $destinations[$target] = match ($target) {
+                'r2' => $this->syncToR2(),
+                'vps' => $this->syncToRemoteVps(),
+                default => false,
+            };
+
+            $destinations[$target]
+                ? $this->info(' Copia su '.strtoupper($target).' completata.')
+                : $this->error(' Copia su '.strtoupper($target).' FALLITA: i dump restano solo in locale.');
         }
 
-        if (in_array('vps', $targets, true) && ! $this->syncToRemoteVps()) {
-            $syncFailed = true;
-        }
+        // L'esito per database e destinazione serve al report notturno (NightlyBackup -> UnicoBPM ed email agli amministratori).
+        Cache::put('backup:last_databases', ['at' => now()->toIso8601String(), 'databases' => $results, 'destinations' => $destinations], now()->addDays(2));
 
-        if ($syncFailed) {
+        $this->summary($results, $destinations);
+
+        if (in_array(false, $destinations, true)) {
             return self::FAILURE;
         }
 
@@ -177,6 +182,31 @@ class BackupDatabases extends Command
         $this->cleanLocalBackups();
 
         return empty($failedDbs) ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * Riepilogo a fine comando: un database per riga con l'esito, poi le destinazioni.
+     *
+     * @param  list<array{name: string, ok: bool, size_kb?: int, error?: string, warning?: string, unchanged?: bool}>  $results
+     * @param  array<string, bool>  $destinations
+     */
+    private function summary(array $results, array $destinations): void
+    {
+        $this->newLine();
+        $this->table(['Database', 'Esito', 'KB', 'Nota'], array_map(fn (array $result): array => [
+            $result['name'],
+            match (true) {
+                ! $result['ok'] => 'FALLITO',
+                ! empty($result['unchanged']) => 'invariato',
+                default => 'salvato',
+            },
+            $result['size_kb'] ?? '-',
+            $result['error'] ?? $result['warning'] ?? '',
+        ], $results));
+
+        foreach ($destinations as $target => $ok) {
+            $this->line(' '.strtoupper($target).': '.($ok ? 'copia riuscita' : 'copia FALLITA'));
+        }
     }
 
     private function syncToR2(): bool

@@ -91,6 +91,9 @@ return [
         'timeout' => env('BPM_TIMEOUT', 10),
     ],
 
+    // A fine run notturno fallito si scrive a questi stessi indirizzi (BACKUP_ADMIN_EMAILS), anche se UnicoBPM non risponde.
+    'notify_failures' => (bool) env('BACKUP_NOTIFY_FAILURES', true),
+
     // Pannello Filament (/admin): possono accedere solo questi indirizzi email (separati da virgola). Gli utenti sono quelli condivisi della suite.
     'admin_emails' => array_filter(array_map('trim', explode(',', (string) env('BACKUP_ADMIN_EMAILS', '')))),
 
