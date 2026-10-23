@@ -78,10 +78,11 @@ class FilesRelationManager extends RelationManager
                         TextInput::make('target_database')
                             ->label('Nome del nuovo database')
                             ->default("{$record->backupDb->database_name}_restore")
+                            ->helperText('Il nome proposto finisce con _restore. Puoi cambiarlo.')
                             ->regex('/^[A-Za-z0-9_]+$/')
                             ->maxLength(64)
-                            ->required(fn ($get): bool => $get('mode') === 'nuovo')
-                            ->visible(fn ($get): bool => $get('mode') === 'nuovo')
+                            ->required(fn ($get): bool => $get('mode') !== 'originale')
+                            ->hidden(fn ($get): bool => $get('mode') === 'originale')
                             ->notIn(['mysql', 'sys', 'information_schema', 'performance_schema', $record->backupDb->database_name])
                             ->validationMessages(['not_in' => 'Per sovrascrivere l\'originale scegli l\'altra opzione.']),
                         TextInput::make('conferma')

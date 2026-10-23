@@ -33,6 +33,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandLogo(asset('brand/logos/unico-backup.jpg'))
+            ->brandLogoHeight('5rem')
+            ->favicon(asset('brand/icons/unico-backup-64.png'))
             ->brandName(function (): string {
                 $serverName = config('backup_paths.destination_prefix');
 

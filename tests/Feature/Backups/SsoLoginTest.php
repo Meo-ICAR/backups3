@@ -8,6 +8,19 @@ use Tests\TestCase;
 
 class SsoLoginTest extends TestCase
 {
+    public function test_the_home_page_opens_the_admin_panel(): void
+    {
+        $this->get('/')->assertRedirect('/admin');
+    }
+
+    public function test_the_login_page_shows_the_brand_banner(): void
+    {
+        $this->get('/admin/login')
+            ->assertOk()
+            ->assertSee('brand/logos/unico-backup.jpg', false)
+            ->assertSee('brand/icons/unico-backup-64.png', false);
+    }
+
     public function test_the_login_page_offers_microsoft_and_google(): void
     {
         $this->get('/admin/login')->assertOk()->assertSee('Microsoft')->assertSee('Google');

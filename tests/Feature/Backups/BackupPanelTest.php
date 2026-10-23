@@ -184,6 +184,31 @@ class BackupPanelTest extends BackupDbTestCase
         Bus::assertDispatchedAfterResponse(RestoreBackup::class);
     }
 
+    public function test_bulk_restore_uses_a_suffix_other_than_restore(): void
+    {
+        Bus::fake();
+
+        Livewire::test(ListBackupDbs::class)
+            ->callTableBulkAction('ripristina', [$this->file->backupDb], ['mode' => 'nuovo', 'suffisso' => '_test'])
+            ->assertHasNoFormErrors();
+
+        $restore = BackupDbRestore::query()->firstOrFail();
+        $this->assertSame('alfa_test', $restore->target_database);
+        $this->assertFalse($restore->overwrites_original);
+    }
+
+    public function test_bulk_restore_rejects_a_suffix_without_the_leading_underscore(): void
+    {
+        Bus::fake();
+
+        Livewire::test(ListBackupDbs::class)
+            ->callTableBulkAction('ripristina', [$this->file->backupDb], ['mode' => 'nuovo', 'suffisso' => 'test'])
+            ->assertHasFormErrors(['suffisso']);
+
+        $this->assertSame(0, BackupDbRestore::query()->count());
+        Bus::assertNotDispatchedAfterResponse(RestoreBackup::class);
+    }
+
     public function test_bulk_restore_skips_a_database_that_has_no_backup(): void
     {
         Bus::fake();

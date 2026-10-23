@@ -150,7 +150,7 @@ class BackupDbsTable
                 ->label('Dove ripristinare')
                 ->options(function () use ($action): array {
                     $options = [
-                        'nuovo' => 'In un nuovo database per ciascuno, con suffisso _restore. L\'originale non si tocca',
+                        'nuovo' => 'In un nuovo database per ciascuno, con il suffisso indicato. L\'originale non si tocca',
                     ];
 
                     $records = $action->getSelectedRecords();
@@ -163,6 +163,14 @@ class BackupDbsTable
                 ->default('nuovo')
                 ->live()
                 ->required(),
+            TextInput::make('suffisso')
+                ->label('Suffisso del nuovo database')
+                ->default('_restore')
+                ->helperText('Si aggiunge al nome di ciascun database. Il valore di partenza è _restore: puoi metterne un altro, per esempio _test.')
+                ->hidden(fn ($get): bool => $get('mode') === 'originale')
+                ->required(fn ($get): bool => $get('mode') !== 'originale')
+                ->regex('/^_[A-Za-z0-9_]{1,31}$/')
+                ->validationMessages(['regex' => 'Il suffisso inizia con _ e contiene solo lettere, numeri e _.']),
             TextInput::make('conferma')
                 ->label('Per confermare scrivi: sovrascrivi')
                 ->visible(fn ($get): bool => $get('mode') === 'originale')
@@ -189,6 +197,7 @@ class BackupDbsTable
             $started = [];
             $skipped = [];
             $targets = [];
+            $suffix = (string) ($data['suffisso'] ?? '_restore');
 
             foreach ($records as $record) {
                 $file = $record->latestFile;
@@ -198,7 +207,13 @@ class BackupDbsTable
                     continue;
                 }
 
-                $target = $original ? $record->database_name : $record->database_name.'_restore';
+                if (! $original && ! preg_match('/^_[A-Za-z0-9_]{1,31}$/', $suffix)) {
+                    $skipped[] = $record->database_name;
+
+                    continue;
+                }
+
+                $target = $original ? $record->database_name : $record->database_name.$suffix;
                 $forbidden = ['mysql', 'sys', 'information_schema', 'performance_schema'];
 
                 if (
