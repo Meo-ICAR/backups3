@@ -46,14 +46,14 @@ class RestoreBackup
             $this->check($r2->download($restore->file->r2_key, $file), 'Download da R2');
             $this->check(Process::run(['gzip', '-t', $file]), 'Archivio gzip corrotto');
 
-            $env = ['MYSQL_PWD' => (string) $this->credentials()['password']];
-            $connection = ['--host='.$this->credentials()['host'], '--user='.$this->credentials()['username']];
+            $env = ['MYSQL_PWD' => (string) self::credentials()['password']];
+            $connection = ['--host='.self::credentials()['host'], '--user='.self::credentials()['username']];
 
             $this->check(Process::env($env)->run(['mysql', ...$connection, '-e', "CREATE DATABASE IF NOT EXISTS `{$restore->target_database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"]), 'Creazione del database');
 
             // Il nome del file e del database arrivano come argomenti posizionali: niente interpolazione nella shell.
             $load = Process::env($env)->timeout($this->timeout)->run([
-                'bash', '-o', 'pipefail', '-c', 'gunzip -c "$1" | mysql --host="$2" --user="$3" "$4"', 'restore', $file, $this->credentials()['host'], $this->credentials()['username'], $restore->target_database,
+                'bash', '-o', 'pipefail', '-c', 'gunzip -c "$1" | mysql --host="$2" --user="$3" "$4"', 'restore', $file, self::credentials()['host'], self::credentials()['username'], $restore->target_database,
             ]);
             $this->check($load, 'Caricamento del dump');
 
@@ -66,7 +66,7 @@ class RestoreBackup
     }
 
     /** @return array{host: string, username: string, password: ?string} */
-    private function credentials(): array
+    public static function credentials(): array
     {
         $backup = config('backup_paths.mysql');
         $default = config('database.connections.'.config('database.default'));
