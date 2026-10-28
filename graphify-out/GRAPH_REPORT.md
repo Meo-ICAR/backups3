@@ -1,17 +1,22 @@
-# Graph Report - backups3  (2026-10-05)
+# Graph Report - backups3  (2026-10-24)
 
 ## Corpus Check
-- 184 files · ~97,117 words
+- 250 files · ~134,271 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 22 file(s) not represented in the graph (top: (none) 16, .bak 2, .example 1)
+- Unclassified: 22 file(s) not represented in the graph (top: (none) 17, .css 2, .example 1)
 
 ## Summary
-- 1469 nodes · 1489 edges · 168 communities (147 shown, 21 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 29 edges (avg confidence: 0.95)
+- 2139 nodes · 2709 edges · 211 communities (160 shown, 51 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 73 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
 
+## Graph Freshness
+- Built from commit: `dd286f0a`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
+
 ## Community Hubs (Navigation)
-- BackupS3 — Specifiche di progetto
+- BackupDb
 - Cloud CLI
 - Cloud CLI
 - Cloud CLI
@@ -143,19 +148,20 @@
 - Configuration Best Practices
 - Naming and Structure
 - Reviewing Tests
-- AppServiceProvider
+- AppServiceProvider.php
+- Configuration Best Practices
+- TestCase
+- Configuration Best Practices
+- Filament\Tables\Table
 - Configuration Best Practices
 - Naming and Structure
-- Configuration Best Practices
-- Naming and Structure
-- Configuration Best Practices
-- Naming and Structure
-- .casts
+- Lifecycle canonico dei database
 - Factories and Test Data
 - Factories and Test Data
 - Testing Best Practices
 - psr-4
 - require
+- BackupDbsTable.php
 - DatabaseSeeder.php
 - Factories and Test Data
 - Testing Best Practices
@@ -166,18 +172,53 @@
 - laravel-boost
 - laravel-boost
 - Controller.php
+- RestoreEnvActions.php
+- File map
+- BackupDbRestore
+- BackupDbs/RelationManagers/FilesRelationManager.php
+- Filament\Schemas\Schema
+- AdminPanelProvider.php
+- BackupDatabases.php
+- BackupPanelTest
+- RunEnvBackup
+- R2Cli
+- BackupEnvRestore
+- ListBackupEnvs.php
+- SocialiteUser
+- BackupEnvPanelTest
+- BackupEnvFilesCommandTest
+- CleanBackupsCommandTest.php
+- NightlyBackupCommandTest
+- .command
+- Illuminate\Console\Command
+- RunDatabaseBackup
+- BackupFailed
+- BpmReporter
+- ShowLastBackups
+- Filament\Actions\BulkAction
+- RestoreEnvFileTest.php
+- BackupEnvFiles
+- Manual operations
+- SsoLoginTest
+- Testing Best Practices
+- EditBackupDb
+- Canonical Database Lifecycle Implementation Plan
+- Architettura
+- CheckBackupConnections
+- SyncUploads
+- BackupHourly
 
 ## God Nodes (most connected - your core abstractions)
-1. `TestCase` - 18 edges
-2. `User` - 13 edges
-3. `Cloud CLI` - 12 edges
-4. `Detection Checklist` - 12 edges
-5. `Cloud CLI` - 12 edges
-6. `Detection Checklist` - 12 edges
-7. `Cloud CLI` - 12 edges
-8. `Detection Checklist` - 12 edges
-9. `Cloud CLI` - 12 edges
-10. `Detection Checklist` - 12 edges
+1. `TestCase` - 38 edges
+2. `File map` - 33 edges
+3. `BackupEnv` - 25 edges
+4. `BackupEnvRestore` - 25 edges
+5. `Lifecycle canonico dei database` - 24 edges
+6. `BackupDbRestore` - 21 edges
+7. `BackupDb` - 20 edges
+8. `User` - 20 edges
+9. `BackupPanelTest` - 20 edges
+10. `BackupEnvFile` - 19 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Follow Project Naming Conventions` --references--> `User`  [INFERRED]
@@ -194,27 +235,27 @@
 ## Import Cycles
 - None detected.
 
-## Communities (168 total, 21 thin omitted)
+## Communities (211 total, 51 thin omitted)
 
-### Community 0 - "BackupS3 — Specifiche di progetto"
-Cohesion: 0.05
-Nodes (17): BackupDatabases, CleanBackups, SyncUploads, Affidabilità — requisiti fermi, Architettura, Backlog di miglioramenti non ancora implementati, BackupS3 — Specifiche di progetto, Configurazione (+9 more)
+### Community 0 - "BackupDb"
+Cohesion: 0.06
+Nodes (21): Remote Access, Remote Commands, Tinker (v0.2.0 or later), BackupDatabases, {closure#14}(), {closure#5}(), {closure#8}(), BackupDb (+13 more)
 
 ### Community 1 - "Cloud CLI"
-Cohesion: 0.06
-Nodes (30): Adding a cache to an existing environment, Adding a database to an existing environment, Checklists for Multi-Step Operations, Custom domain setup, Full environment setup (app + database + cache + domain), New app from scratch, Application Setup, Billing & Usage (+22 more)
+Cohesion: 0.07
+Nodes (26): Adding a cache to an existing environment, Adding a database to an existing environment, Checklists for Multi-Step Operations, Custom domain setup, Full environment setup (app + database + cache + domain), New app from scratch, Application Setup, Billing and Usage (+18 more)
 
 ### Community 2 - "Cloud CLI"
 Cohesion: 0.06
-Nodes (30): Adding a cache to an existing environment, Adding a database to an existing environment, Checklists for Multi-Step Operations, Custom domain setup, Full environment setup (app + database + cache + domain), New app from scratch, Application Setup, Billing & Usage (+22 more)
+Nodes (29): Adding a cache to an existing environment, Adding a database to an existing environment, Checklists for Multi-Step Operations, Custom domain setup, Full environment setup (app + database + cache + domain), New app from scratch, Application Setup, Billing and Usage (+21 more)
 
 ### Community 3 - "Cloud CLI"
 Cohesion: 0.06
-Nodes (30): Adding a cache to an existing environment, Adding a database to an existing environment, Checklists for Multi-Step Operations, Custom domain setup, Full environment setup (app + database + cache + domain), New app from scratch, Application Setup, Billing & Usage (+22 more)
+Nodes (29): Adding a cache to an existing environment, Adding a database to an existing environment, Checklists for Multi-Step Operations, Custom domain setup, Full environment setup (app + database + cache + domain), New app from scratch, Application Setup, Billing and Usage (+21 more)
 
 ### Community 4 - "Cloud CLI"
 Cohesion: 0.06
-Nodes (30): Adding a cache to an existing environment, Adding a database to an existing environment, Checklists for Multi-Step Operations, Custom domain setup, Full environment setup (app + database + cache + domain), New app from scratch, Application Setup, Billing & Usage (+22 more)
+Nodes (29): Adding a cache to an existing environment, Adding a database to an existing environment, Checklists for Multi-Step Operations, Custom domain setup, Full environment setup (app + database + cache + domain), New app from scratch, Application Setup, Billing and Usage (+21 more)
 
 ### Community 5 - "Laravel Boost Guidelines"
 Cohesion: 0.07
@@ -229,12 +270,12 @@ Cohesion: 0.10
 Nodes (20): devDependencies, concurrently, laravel-vite-plugin, tailwindcss, @tailwindcss/vite, vite, optionalDependencies, @laravel/multiplex (+12 more)
 
 ### Community 8 - "Illuminate\Database\Schema\Blueprint"
-Cohesion: 0.16
-Nodes (8): {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#2}(), {closure#1}(), {closure#2}(), {closure#3}()
+Cohesion: 0.07
+Nodes (24): {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#2}(), {closure#1}(), {closure#2}(), {closure#3}() (+16 more)
 
 ### Community 9 - ".agents/skills/testing-best-practices/SKILL.md"
-Cohesion: 0.15
-Nodes (8): Built-in Laravel Assertion Methods, How to Find Test Framework Features, Security Tests, Consistency First, How to Apply, Rule Index, Testing Best Practices, What to Test
+Cohesion: 0.29
+Nodes (3): Built-in Laravel Assertion Methods, How to Find Test Framework Features, Security Tests
 
 ### Community 10 - "Detection Checklist"
 Cohesion: 0.17
@@ -245,7 +286,7 @@ Cohesion: 0.17
 Nodes (11): Edge cases, Glob mapping, Ground Rules (read before you start), Infer Conventions, Process, Step 0: Orient, Step 1: Predefined sweep, Step 2: Open-ended pass (+3 more)
 
 ### Community 12 - "Security Best Practices"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (11): Apply Cross-Site Request Forgery Protection, Audit Dependencies, Authorize Protected Actions, Bind Query Parameters, Control Mass Assignment, Encrypt Sensitive Attributes When Appropriate, Escape Output in Its Context, Keep Secrets Out of Application Code (+3 more)
 
 ### Community 13 - "Detection Checklist"
@@ -277,7 +318,7 @@ Cohesion: 0.17
 Nodes (11): Edge cases, Glob mapping, Ground Rules (read before you start), Infer Conventions, Process, Step 0: Orient, Step 1: Predefined sweep, Step 2: Open-ended pass (+3 more)
 
 ### Community 20 - "Architecture Best Practices"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (11): Architecture Best Practices, Depend on Contracts at Boundaries, Extract Focused Business Operations, Follow Framework Conventions, Inject Required Dependencies, Specify a Deterministic Sort Order, Use Atomic Locks for Race Conditions, Use `Concurrency::run()` for Parallel Execution (+3 more)
 
 ### Community 21 - "Tailwind CSS Development"
@@ -293,7 +334,7 @@ Cohesion: 0.18
 Nodes (10): Basic Usage, Common Pitfalls, CSS-First Configuration, Dark Mode, Documentation, Import Syntax, Replaced Utilities, Spacing (+2 more)
 
 ### Community 24 - "Architecture Best Practices"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (11): Architecture Best Practices, Depend on Contracts at Boundaries, Extract Focused Business Operations, Follow Framework Conventions, Inject Required Dependencies, Specify a Deterministic Sort Order, Use Atomic Locks for Race Conditions, Use `Concurrency::run()` for Parallel Execution (+3 more)
 
 ### Community 25 - "Security Best Practices"
@@ -305,7 +346,7 @@ Cohesion: 0.18
 Nodes (10): Basic Usage, Common Pitfalls, CSS-First Configuration, Dark Mode, Documentation, Import Syntax, Replaced Utilities, Spacing (+2 more)
 
 ### Community 28 - "Architecture Best Practices"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (11): Architecture Best Practices, Depend on Contracts at Boundaries, Extract Focused Business Operations, Follow Framework Conventions, Inject Required Dependencies, Specify a Deterministic Sort Order, Use Atomic Locks for Race Conditions, Use `Concurrency::run()` for Parallel Execution (+3 more)
 
 ### Community 29 - "Security Best Practices"
@@ -373,7 +414,7 @@ Cohesion: 0.22
 Nodes (8): Add Indexes for Measured Query Patterns, Count Relationships Without Loading Them, Database Performance Best Practices, Eager Load Relationships Before Iterating, Keep Queries Out of Blade Templates, Prevent Lazy Loading in Development, Process Large Data Sets Incrementally, Select Only Needed Columns
 
 ### Community 45 - "Queue and Job Best Practices"
-Cohesion: 0.22
+Cohesion: 0.20
 Nodes (9): Back Off Transient Failures, Batch Jobs for Group Coordination, Configure Time-Based Retry Limits Deliberately, Handle Terminal Failure When Needed, Keep Reservation Time Longer Than Execution Time, Queue and Job Best Practices, Rate Limit External Calls, Use Horizon for Redis Queue Operations (+1 more)
 
 ### Community 46 - "bootstrap/app.php"
@@ -381,11 +422,11 @@ Cohesion: 0.33
 Nodes (3): {closure#1}(), {closure#2}(), {closure#3}()
 
 ### Community 47 - ".claude/skills/laravel-best-practices/SKILL.md"
-Cohesion: 0.22
+Cohesion: 0.29
 Nodes (5): Consistency First, Decision Rules, How to Apply, Laravel Best Practices, Rule Index
 
 ### Community 48 - "Advanced Query Best Practices"
-Cohesion: 0.22
+Cohesion: 0.20
 Nodes (9): Advanced Query Best Practices, Combine Related Counts with Conditional Aggregates, Compare `whereHas()` with an `IN` Subquery, Consider a Correlated Subquery for Has-Many Ordering, Create Dynamic Relationships with a Subquery Foreign Key, Design Composite Indexes for the Query, Measure Two Simple Queries Against One Complex Query, Reuse Loaded Parent Models with `setRelation()` (+1 more)
 
 ### Community 49 - "Caching Best Practices"
@@ -397,7 +438,7 @@ Cohesion: 0.22
 Nodes (8): Add Indexes for Measured Query Patterns, Count Relationships Without Loading Them, Database Performance Best Practices, Eager Load Relationships Before Iterating, Keep Queries Out of Blade Templates, Prevent Lazy Loading in Development, Process Large Data Sets Incrementally, Select Only Needed Columns
 
 ### Community 51 - "Migration Best Practices"
-Cohesion: 0.22
+Cohesion: 0.20
 Nodes (9): Define Foreign-Key Constraints Deliberately, Design Indexes for Real Queries, Generate Migrations with Artisan, Keep Migrations Focused, Make Rollbacks Honest, Migration Best Practices, Mirror Defaults Only When Unsaved Models Need Them, Stage Changes That Affect Existing Rows (+1 more)
 
 ### Community 52 - "composer.json"
@@ -421,7 +462,7 @@ Cohesion: 0.22
 Nodes (8): Add Indexes for Measured Query Patterns, Count Relationships Without Loading Them, Database Performance Best Practices, Eager Load Relationships Before Iterating, Keep Queries Out of Blade Templates, Prevent Lazy Loading in Development, Process Large Data Sets Incrementally, Select Only Needed Columns
 
 ### Community 57 - ".kiro/skills/laravel-best-practices/SKILL.md"
-Cohesion: 0.22
+Cohesion: 0.29
 Nodes (5): Consistency First, Decision Rules, How to Apply, Laravel Best Practices, Rule Index
 
 ### Community 58 - "Caching Best Practices"
@@ -433,11 +474,11 @@ Cohesion: 0.22
 Nodes (8): Add Indexes for Measured Query Patterns, Count Relationships Without Loading Them, Database Performance Best Practices, Eager Load Relationships Before Iterating, Keep Queries Out of Blade Templates, Prevent Lazy Loading in Development, Process Large Data Sets Incrementally, Select Only Needed Columns
 
 ### Community 60 - "Queue and Job Best Practices"
-Cohesion: 0.22
+Cohesion: 0.20
 Nodes (9): Back Off Transient Failures, Batch Jobs for Group Coordination, Configure Time-Based Retry Limits Deliberately, Handle Terminal Failure When Needed, Keep Reservation Time Longer Than Execution Time, Queue and Job Best Practices, Rate Limit External Calls, Use Horizon for Redis Queue Operations (+1 more)
 
 ### Community 61 - ".agents/skills/laravel-best-practices/SKILL.md"
-Cohesion: 0.25
+Cohesion: 0.29
 Nodes (5): Consistency First, Decision Rules, How to Apply, Laravel Best Practices, Rule Index
 
 ### Community 62 - "Blade and View Best Practices"
@@ -445,8 +486,8 @@ Cohesion: 0.25
 Nodes (7): Blade and View Best Practices, Prefer Components for Explicit Interfaces, Return Blade Fragments for Partial Rendering, Share Compatible View Data with a View Composer, Share Parent Component Props with `@aware`, Use `$attributes->merge()` in Component Templates, Use `@pushOnce` for Per-Component Scripts
 
 ### Community 63 - "Eloquent Best Practices"
-Cohesion: 0.25
-Nodes (7): Apply Global Scopes Sparingly, Cast Date and Time Attributes, Define Precise Relationship Types, Eloquent Best Practices, Keep Application Queries Model-Aware, Use Local Scopes for Reusable Queries, Use `whereBelongsTo()` for Relationship Queries
+Cohesion: 0.22
+Nodes (8): Apply Global Scopes Sparingly, Cast Date and Time Attributes, Define Attribute Casts, Define Precise Relationship Types, Eloquent Best Practices, Keep Application Queries Model-Aware, Use Local Scopes for Reusable Queries, Use `whereBelongsTo()` for Relationship Queries
 
 ### Community 64 - "Error Handling Best Practices"
 Cohesion: 0.25
@@ -465,8 +506,8 @@ Cohesion: 0.25
 Nodes (7): Blade and View Best Practices, Prefer Components for Explicit Interfaces, Return Blade Fragments for Partial Rendering, Share Compatible View Data with a View Composer, Share Parent Component Props with `@aware`, Use `$attributes->merge()` in Component Templates, Use `@pushOnce` for Per-Component Scripts
 
 ### Community 69 - "Eloquent Best Practices"
-Cohesion: 0.25
-Nodes (7): Apply Global Scopes Sparingly, Cast Date and Time Attributes, Define Precise Relationship Types, Eloquent Best Practices, Keep Application Queries Model-Aware, Use Local Scopes for Reusable Queries, Use `whereBelongsTo()` for Relationship Queries
+Cohesion: 0.22
+Nodes (8): Apply Global Scopes Sparingly, Cast Date and Time Attributes, Define Attribute Casts, Define Precise Relationship Types, Eloquent Best Practices, Keep Application Queries Model-Aware, Use Local Scopes for Reusable Queries, Use `whereBelongsTo()` for Relationship Queries
 
 ### Community 70 - "Error Handling Best Practices"
 Cohesion: 0.25
@@ -481,7 +522,7 @@ Cohesion: 0.25
 Nodes (7): Endpoint Coverage, Endpoint Tests, How to Write the Test, Tenant Isolation, Test Authorization at the Policy Level, Testing Validation, Which Layer Owns Which Case
 
 ### Community 74 - ".github/skills/laravel-best-practices/SKILL.md"
-Cohesion: 0.25
+Cohesion: 0.29
 Nodes (5): Consistency First, Decision Rules, How to Apply, Laravel Best Practices, Rule Index
 
 ### Community 75 - "Blade and View Best Practices"
@@ -489,8 +530,8 @@ Cohesion: 0.25
 Nodes (7): Blade and View Best Practices, Prefer Components for Explicit Interfaces, Return Blade Fragments for Partial Rendering, Share Compatible View Data with a View Composer, Share Parent Component Props with `@aware`, Use `$attributes->merge()` in Component Templates, Use `@pushOnce` for Per-Component Scripts
 
 ### Community 76 - "Eloquent Best Practices"
-Cohesion: 0.25
-Nodes (7): Apply Global Scopes Sparingly, Cast Date and Time Attributes, Define Precise Relationship Types, Eloquent Best Practices, Keep Application Queries Model-Aware, Use Local Scopes for Reusable Queries, Use `whereBelongsTo()` for Relationship Queries
+Cohesion: 0.22
+Nodes (8): Apply Global Scopes Sparingly, Cast Date and Time Attributes, Define Attribute Casts, Define Precise Relationship Types, Eloquent Best Practices, Keep Application Queries Model-Aware, Use Local Scopes for Reusable Queries, Use `whereBelongsTo()` for Relationship Queries
 
 ### Community 77 - "Error Handling Best Practices"
 Cohesion: 0.25
@@ -509,8 +550,8 @@ Cohesion: 0.25
 Nodes (7): Blade and View Best Practices, Prefer Components for Explicit Interfaces, Return Blade Fragments for Partial Rendering, Share Compatible View Data with a View Composer, Share Parent Component Props with `@aware`, Use `$attributes->merge()` in Component Templates, Use `@pushOnce` for Per-Component Scripts
 
 ### Community 82 - "Eloquent Best Practices"
-Cohesion: 0.25
-Nodes (7): Apply Global Scopes Sparingly, Cast Date and Time Attributes, Define Precise Relationship Types, Eloquent Best Practices, Keep Application Queries Model-Aware, Use Local Scopes for Reusable Queries, Use `whereBelongsTo()` for Relationship Queries
+Cohesion: 0.22
+Nodes (8): Apply Global Scopes Sparingly, Cast Date and Time Attributes, Define Attribute Casts, Define Precise Relationship Types, Eloquent Best Practices, Keep Application Queries Model-Aware, Use Local Scopes for Reusable Queries, Use `whereBelongsTo()` for Relationship Queries
 
 ### Community 83 - "Error Handling Best Practices"
 Cohesion: 0.25
@@ -641,8 +682,8 @@ Cohesion: 0.29
 Nodes (6): Arrange, Act, Assert, Assert a Known Value, Assert the Complete Result, Assertions, How to Find the Correct Assertion, Named Response Assertions
 
 ### Community 115 - ".github/skills/testing-best-practices/SKILL.md"
-Cohesion: 0.29
-Nodes (3): Built-in Laravel Assertion Methods, How to Find Test Framework Features, Security Tests
+Cohesion: 0.15
+Nodes (8): Built-in Laravel Assertion Methods, How to Find Test Framework Features, File Layout, Grouping, Naming and Structure, Naming Tests, Test Class and Methods, Security Tests
 
 ### Community 116 - "Fakes, Mocks, and Determinism"
 Cohesion: 0.29
@@ -685,7 +726,7 @@ Cohesion: 0.29
 Nodes (6): Arrange, Act, Assert, Assert a Known Value, Assert the Complete Result, Assertions, How to Find the Correct Assertion, Named Response Assertions
 
 ### Community 126 - ".kiro/skills/testing-best-practices/SKILL.md"
-Cohesion: 0.29
+Cohesion: 0.25
 Nodes (3): Built-in Laravel Assertion Methods, How to Find Test Framework Features, Security Tests
 
 ### Community 127 - "Fakes, Mocks, and Determinism"
@@ -697,7 +738,7 @@ Cohesion: 0.29
 Nodes (6): Common Errors, Global Fakes, How to Find a Slow Test, How to Run the Suite in Parallel, Test Environment, Test Suite Performance
 
 ### Community 129 - "Reviewing Tests"
-Cohesion: 0.29
+Cohesion: 0.33
 Nodes (6): Assertions, Coverage, Data and Determinism, Names and Structure, Reviewing Tests, Test Value
 
 ### Community 130 - "Configuration Best Practices"
@@ -709,24 +750,28 @@ Cohesion: 0.33
 Nodes (5): File Layout, Grouping, Naming and Structure, Naming Tests, Test Class and Methods
 
 ### Community 132 - "Reviewing Tests"
-Cohesion: 0.33
+Cohesion: 0.29
 Nodes (6): Assertions, Coverage, Data and Determinism, Names and Structure, Reviewing Tests, Test Value
+
+### Community 133 - "AppServiceProvider.php"
+Cohesion: 0.20
+Nodes (3): AppServiceProvider, Task 1: Guardia PHPUnit di unico-core, Task 3: Wiring unicoloan
 
 ### Community 134 - "Configuration Best Practices"
 Cohesion: 0.33
 Nodes (5): Configuration Best Practices, Name Repeated Domain Values, Protect Production Secrets, Read Environment Variables in Configuration Files, Use `App::environment()` for Environment Checks
 
-### Community 135 - "Naming and Structure"
-Cohesion: 0.33
-Nodes (5): File Layout, Grouping, Naming and Structure, Naming Tests, Test Class and Methods
+### Community 135 - "TestCase"
+Cohesion: 0.11
+Nodes (8): File Layout, Grouping, Naming and Structure, Naming Tests, Test Class and Methods, BackupDatabasesConfigTest, BackupHourlyCommandTest, TestCase
 
 ### Community 136 - "Configuration Best Practices"
 Cohesion: 0.33
 Nodes (5): Configuration Best Practices, Name Repeated Domain Values, Protect Production Secrets, Read Environment Variables in Configuration Files, Use `App::environment()` for Environment Checks
 
-### Community 137 - "Naming and Structure"
-Cohesion: 0.33
-Nodes (5): File Layout, Grouping, Naming and Structure, Naming Tests, Test Class and Methods
+### Community 137 - "Filament\Tables\Table"
+Cohesion: 0.08
+Nodes (11): BackupDbRestoreResource, BackupDbResource, CreateBackupDb, ListBackupDbs, BackupEnvRestoreResource, {closure#4}(), {closure#5}(), {closure#6}() (+3 more)
 
 ### Community 138 - "Configuration Best Practices"
 Cohesion: 0.33
@@ -736,9 +781,9 @@ Nodes (5): Configuration Best Practices, Name Repeated Domain Values, Protect Pr
 Cohesion: 0.33
 Nodes (5): File Layout, Grouping, Naming and Structure, Naming Tests, Test Class and Methods
 
-### Community 140 - ".casts"
-Cohesion: 0.40
-Nodes (4): Define Attribute Casts, Define Attribute Casts, Define Attribute Casts, Define Attribute Casts
+### Community 140 - "Lifecycle canonico dei database"
+Cohesion: 0.05
+Nodes (38): 10. State machine, 11. Lock, concorrenza ed error handling, 12. Build, migration e verifiche, 13. Cutover blue-green e rollback, 14. Clone coordinato di sviluppo e sanitizzazione, 15. PHPUnit, 16.1 Fix prioritario unico-core, 16. Guardie multilivello (+30 more)
 
 ### Community 141 - "Factories and Test Data"
 Cohesion: 0.40
@@ -757,8 +802,12 @@ Cohesion: 0.40
 Nodes (5): autoload, psr-4, App\\, Database\\Factories\\, Database\\Seeders\\
 
 ### Community 145 - "require"
-Cohesion: 0.40
-Nodes (5): require, laravel/framework, laravel/tinker, php, spatie/db-dumper
+Cohesion: 0.18
+Nodes (11): require, dutchcodingcompany/filament-socialite, filament/filament, laravel/framework, laravel/socialite, laravel/tinker, owenvoke/blade-fontawesome, php (+3 more)
+
+### Community 146 - "BackupDbsTable.php"
+Cohesion: 0.10
+Nodes (4): {closure#13}(), {closure#4}(), {closure#12}(), {closure#6}()
 
 ### Community 149 - "Factories and Test Data"
 Cohesion: 0.40
@@ -784,25 +833,69 @@ Nodes (3): autoload-dev, psr-4, Tests\\
 Cohesion: 0.67
 Nodes (3): extra, laravel, dont-discover
 
+### Community 168 - "RestoreEnvActions.php"
+Cohesion: 0.10
+Nodes (14): {closure#1}(), {closure#13}(), {closure#14}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}() (+6 more)
+
+### Community 169 - "File map"
+Cohesion: 0.07
+Nodes (29): File map, Task 10: Firma Ed25519, Task 11: Redazione segreti, Task 12: Selezione storica e skew, Task 13: Classificazione ownership, Task 14: Configurazione tenant fail-closed, Task 15: Gate dry-run e conferma, Task 16: State machine (+21 more)
+
+### Community 170 - "BackupDbRestore"
+Cohesion: 0.12
+Nodes (6): {closure#4}(), {closure#5}(), {closure#6}(), RestoreBackup, BackupDbRestore, RestoreBackupTest
+
+### Community 171 - "BackupDbs/RelationManagers/FilesRelationManager.php"
+Cohesion: 0.10
+Nodes (8): {closure#11}(), {closure#3}(), {closure#4}(), {closure#5}(), FilesRelationManager, {closure#3}(), FilesRelationManager, BackupDbFile
+
+### Community 172 - "Filament\Schemas\Schema"
+Cohesion: 0.11
+Nodes (4): BackupDbForm, ViewBackupEnv, BackupEnvInfolist, {closure#2}()
+
+### Community 180 - "RunEnvBackup"
+Cohesion: 0.15
+Nodes (4): RunEnvBackup, {closure#2}(), {closure#3}(), RunEnvBackupTest
+
+### Community 190 - ".command"
+Cohesion: 0.29
+Nodes (7): Commands, Commands, Task 32: Retention, PITR, audit e Object Lock, Task 9: JSON canonico e manifest v1, Commands, Commands, BackupDatabasesCommandTest
+
+### Community 199 - "Manual operations"
+Cohesion: 0.25
+Nodes (8): Manual M0: MySQL effimero di PHPUnit, Manual M1: Inspect reale, Manual M2: Build e verify sul green, Manual M3: Clone di sviluppo, Manual M4: Cutover, Manual M5: Rollback dopo le scritture, Manual M6: Steady state, Manual operations
+
+### Community 201 - "Testing Best Practices"
+Cohesion: 0.40
+Nodes (5): Consistency First, How to Apply, Rule Index, Testing Best Practices, What to Test
+
+### Community 203 - "Canonical Database Lifecycle Implementation Plan"
+Cohesion: 0.40
+Nodes (4): Canonical Database Lifecycle Implementation Plan, Global Constraints, Review Focus, Spec coverage
+
+### Community 204 - "Architettura"
+Cohesion: 0.40
+Nodes (5): Architettura, Configurazione, Database salvati, Esito su UnicoBPM, Perché AWS CLI e non Flysystem S3
+
 ## Knowledge Gaps
-- **972 isolated node(s):** `wsl.exe`, `wsl.exe`, `Controller`, `$schema`, `name` (+967 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1050 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **21 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **5 isolated node(s):** `php`, `php`, `concurrently`, `tailwindcss`, `@laravel/multiplex`
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1310 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **51 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `User` connect `User` to `Convention and Style Best Practices`, `UserFactory.php`, `Convention and Style Best Practices`, `.casts`, `Convention and Style Best Practices`, `DatabaseSeeder.php`, `Convention and Style Best Practices`?**
-  _High betweenness centrality (0.083) - this node is a cross-community bridge._
+- **Why does `TestCase` connect `TestCase` to `Test Suite Performance`, `Reviewing Tests`, `Naming and Structure`, `Reviewing Tests`, `Illuminate\Database\Schema\Blueprint`, `Naming and Structure`, `TestCase`, `BackupDatabases.php`, `BackupEnvPanelTest.php`, `NightlyBackupCommandTest.php`, `RunEnvBackup`, `Illuminate\Support\Facades\Process`, `SocialiteUser`, `BackupEnvFilesCommandTest`, `CleanBackupsCommandTest.php`, `NightlyBackupCommandTest`, `.command`, `User`, `SsoLoginTest`, `Test Suite Performance`, `Test Suite Performance`, `Reviewing Tests`, `.github/skills/testing-best-practices/SKILL.md`, `Test Suite Performance`, `Reviewing Tests`?**
+  _High betweenness centrality (0.187) - this node is a cross-community bridge._
 - **Are the 12 inferred relationships involving `TestCase` (e.g. with `Test Class and Methods` and `Global Fakes`) actually correct?**
   _`TestCase` has 12 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `wsl.exe`, `wsl.exe`, `Controller` to the rest of the system?**
-  _972 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `BackupS3 — Specifiche di progetto` be split into smaller, more focused modules?**
-  _Cohesion score 0.05353535353535353 - nodes in this community are weakly interconnected._
-- **Why does `Eloquent Best Practices` connect `Eloquent Best Practices` to `.casts`?**
-  _High betweenness centrality (0.052) - this node is a cross-community bridge._
-- **Are the 4 inferred relationships involving `User` (e.g. with `Follow Project Naming Conventions` and `Follow Project Naming Conventions`) actually correct?**
-  _`User` has 4 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `php`, `php`, `concurrently` to the rest of the system?**
+  _5 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `BackupDb` be split into smaller, more focused modules?**
+  _Cohesion score 0.061224489795918366 - nodes in this community are weakly interconnected._
+- **Why does `User` connect `User` to `Convention and Style Best Practices`, `UserFactory.php`, `Convention and Style Best Practices`, `Convention and Style Best Practices`, `BackupEnvPanelTest.php`, `DatabaseSeeder.php`, `SocialiteUser`, `Convention and Style Best Practices`?**
+  _High betweenness centrality (0.185) - this node is a cross-community bridge._
 - **Should `Cloud CLI` be split into smaller, more focused modules?**
-  _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07142857142857142 - nodes in this community are weakly interconnected._
+- **Why does `BackupDatabasesCommandTest` connect `.command` to `TestCase`?**
+  _High betweenness centrality (0.061) - this node is a cross-community bridge._
