@@ -72,7 +72,7 @@ class BackupDatabases extends Command
             $this->info("Inizio backup DB: [{$dbName}]");
 
             $localFolder = storage_path("app/backups/databases/{$dbName}");
-            File::makeDirectory($localFolder, 0755, true, true);
+            File::makeDirectory($localFolder, 0775, true, true);
 
             $localFile = "{$localFolder}/{$dbName}_{$timestamp}.sql.gz";
 
