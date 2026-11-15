@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\BackupDb;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -12,7 +13,7 @@ use Spatie\DbDumper\Databases\MySql;
 
 class BackupHourly extends Command
 {
-    protected $signature = 'backup:hourly {--database=* : Solo questi database (default: quelli di backup_paths.hourly.databases)}';
+    protected $signature = 'backup:hourly {--database=* : Solo questi database (default: quelli con «dump orario» attivo nel pannello)}';
 
     protected $description = 'Dump orario locale dei database in lavorazione durante lo sviluppo, con retention breve (nessuna sincronizzazione remota)';
 
@@ -24,7 +25,7 @@ class BackupHourly extends Command
             return self::SUCCESS;
         }
 
-        $databases = $this->option('database') ?: (array) config('backup_paths.hourly.databases', []);
+        $databases = $this->option('database') ?: BackupDb::namesForHourlyBackup();
         $base = storage_path('app/backups/hourly');
         $timestamp = now()->format('Y-m-d_H-i-s');
         $results = [];

@@ -25,17 +25,9 @@ class BackupHourlyCommandTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_the_databases_in_development_are_in_the_hourly_list_and_in_the_nightly_one(): void
-    {
-        foreach (['unico_core_test', 'unicofinance'] as $database) {
-            $this->assertContains($database, config('backup_paths.hourly.databases'));
-            $this->assertContains($database, config('backup_paths.databases.only'));
-        }
-    }
-
     public function test_dumps_older_than_the_retention_are_removed_and_recent_ones_kept(): void
     {
-        config(['backup_paths.hourly.databases' => [], 'backup_paths.hourly.retention_hours' => 72]);
+        config(['backup_paths.hourly.retention_hours' => 72]);
 
         $old = "{$this->folder}/zz_prova_old.sql.gz";
         $recent = "{$this->folder}/zz_prova_recent.sql.gz";

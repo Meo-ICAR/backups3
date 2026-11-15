@@ -28,6 +28,10 @@ class BackupDbForm
                     ->label('Includi nel backup notturno')
                     ->default(true)
                     ->helperText('Spento: restano i backup già su R2, ma il database non viene più salvato.'),
+                Toggle::make('hourly')
+                    ->label('Dump orario locale')
+                    ->default(false)
+                    ->helperText('Per i database in lavorazione: dump ogni ora sul server, senza invio a R2, tenuti poche ore.'),
                 Toggle::make('only_if_changed')
                     ->label('Salva solo se cambiato')
                     ->default(true)

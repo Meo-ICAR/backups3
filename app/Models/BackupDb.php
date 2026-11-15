@@ -17,6 +17,7 @@ class BackupDb extends Model
     {
         return [
             'is_active' => 'boolean',
+            'hourly' => 'boolean',
             'only_if_changed' => 'boolean',
             'last_checked_at' => 'datetime',
             'last_changed_at' => 'datetime',
@@ -54,6 +55,25 @@ class BackupDb extends Model
         }
 
         return $names;
+    }
+
+    /**
+     * Database di cui questo server fa il dump orario locale, secondo la tabella.
+     *
+     * @return array<int, string>
+     */
+    public static function namesForHourlyBackup(): array
+    {
+        try {
+            return static::query()
+                ->where('server_name', config('backup_paths.destination_prefix'))
+                ->where('hourly', true)
+                ->orderBy('database_name')
+                ->pluck('database_name')
+                ->all();
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /** Il ripristino si fa solo sul server su cui gira questa app: la VPS di un altro server non è raggiungibile da qui. */

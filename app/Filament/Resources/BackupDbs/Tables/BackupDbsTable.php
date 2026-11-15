@@ -57,6 +57,9 @@ class BackupDbsTable
                     ->label('Dimensione')
                     ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : Number::fileSize($state, precision: 1))
                     ->placeholder('—'),
+                IconColumn::make('hourly')
+                    ->label('Orario')
+                    ->boolean(),
                 IconColumn::make('only_if_changed')
                     ->label('Solo se cambiato')
                     ->boolean()

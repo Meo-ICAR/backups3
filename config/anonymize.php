@@ -9,8 +9,8 @@
  */
 
 return [
-    // Database che non si anonimizzano mai: segnalazioni (whistleblowing) e schemi di sistema.
-    'refused_databases' => ['whistle', 'mysql', 'sys', 'information_schema', 'performance_schema'],
+    // Database che non si anonimizzano mai: schemi di sistema. `whistle` (segnalazioni) è stato abilitato su richiesta esplicita.
+    'refused_databases' => ['mysql', 'sys', 'information_schema', 'performance_schema'],
 
     // Prefisso del database temporaneo. Si elimina sempre a fine esecuzione; solo i database con questo prefisso si possono eliminare.
     'scratch_prefix' => 'anontmp_',
@@ -91,6 +91,8 @@ return [
         // Tabelle di definizione con un indirizzo e-mail dentro il testo: si svuota solo la colonna.
         'email_templates.body' => 'free_text',
         'process_tasks.escalation_rules' => 'free_text',
+        // whistle: il codice di accesso al modulo pubblico non somiglia a nessun modello di nome.
+        'companies.shared_passcode' => 'secret',
     ],
 
     // Strategie per nome di colonna, nell'ordine: vince la prima che corrisponde. Le strategie sono in App\Services\Anonymizer.

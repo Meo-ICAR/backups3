@@ -31,7 +31,7 @@ abstract class BackupDbTestCase extends TestCase
         ]);
 
         // Solo le tabelle del pannello: le altre migration dell'app sono scritte per MySQL.
-        foreach (['2026_10_21_100000_create_backupdb_tables', '2026_10_21_110000_add_change_detection_to_backupdb', '2026_10_22_114318_create_backupenv_tables'] as $migration) {
+        foreach (['2026_10_21_100000_create_backupdb_tables', '2026_10_21_110000_add_change_detection_to_backupdb', '2026_11_15_130000_add_hourly_to_backupdb_table', '2026_10_22_114318_create_backupenv_tables'] as $migration) {
             (require database_path("migrations/{$migration}.php"))->up();
         }
     }
