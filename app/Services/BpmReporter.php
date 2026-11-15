@@ -22,21 +22,23 @@ class BpmReporter
      * @param  array<string, int>  $exitCodes
      * @param  list<array{name: string, ok: bool, size_kb?: int, error?: string, warning?: string, unchanged?: bool}>  $databases
      * @param  array<string, bool>  $destinations  Esito della copia dei dump per destinazione (r2, vps).
+     * @param  string  $kind  `nightly` per il backup notturno; `anonymized` e `anonymized_restore` per le copie anonimizzate: stesso evento, quindi gli stessi trigger di UnicoBPM, ma con `data.kind` per distinguerle.
      * @return array<string,mixed>
      */
-    public static function payload(array $exitCodes, array $databases, float $seconds, ?\DateTimeInterface $now = null, array $destinations = []): array
+    public static function payload(array $exitCodes, array $databases, float $seconds, ?\DateTimeInterface $now = null, array $destinations = [], string $kind = 'nightly'): array
     {
         $now ??= now();
         $prefix = trim((string) config('backup_paths.destination_prefix'), '/') ?: 'server';
         $ok = collect($exitCodes)->every(fn (int $code): bool => $code === 0);
+        $label = $kind === 'nightly' ? '' : str_replace('_', '-', $kind).':';
 
         return [
-            'event_id' => "backup.esito:{$prefix}:".$now->format('Y-m-d_H-i'),
+            'event_id' => "backup.esito:{$prefix}:{$label}".$now->format('Y-m-d_H-i'),
             'event' => 'backup.esito',
             'source' => 'backups3',
-            'subject_ref' => "{$prefix}:".$now->format('Y-m-d'),
+            'subject_ref' => "{$prefix}:{$label}".$now->format('Y-m-d'),
             'occurred_at' => $now->format(DATE_ATOM),
-            'data' => [
+            'data' => ($kind === 'nightly' ? [] : ['kind' => $kind]) + [
                 'status' => $ok ? 'ok' : 'failed',
                 'server' => $prefix,
                 'exit_codes' => $exitCodes,

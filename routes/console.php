@@ -29,3 +29,23 @@ Schedule::command('backup:sync-remote')
     ->dailyAt('04:00')
     ->withoutOverlapping(30)
     ->onOneServer();
+
+// Copie anonimizzate: sul server di produzione, ogni notte, solo se si può scrivere su R2 (disco «r2» o ANON_R2_*).
+if (app(App\Services\AnonymizedBackupStore::class)->isConfigured()) {
+    Schedule::command('backup:anonymized-nightly')
+        ->name('backup:anonymized-nightly-run')
+        ->dailyAt((string) config('anonymize.schedule.at'))
+        ->withoutOverlapping(120)
+        ->onOneServer()
+        ->runInBackground();
+}
+
+// Ripristino delle copie anonimizzate: SOLO sul server di sviluppo (ANON_RESTORE_ENABLED=true), dopo la copia notturna.
+if (config('anonymize.restore.enabled')) {
+    Schedule::command('backup:restore-anonymized')
+        ->name('backup:restore-anonymized-run')
+        ->dailyAt((string) config('anonymize.restore.at'))
+        ->withoutOverlapping(120)
+        ->onOneServer()
+        ->runInBackground();
+}

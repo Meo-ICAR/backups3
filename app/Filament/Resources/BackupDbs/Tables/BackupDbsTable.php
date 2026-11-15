@@ -3,7 +3,9 @@
 namespace App\Filament\Resources\BackupDbs\Tables;
 
 use App\Jobs\RestoreBackup;
+use App\Jobs\RunAnonymizedBackup;
 use App\Jobs\RunDatabaseBackup;
+use App\Models\AnonymizedBackup;
 use App\Models\BackupDb;
 use App\Models\BackupDbRestore;
 use Filament\Actions\BulkAction;
@@ -21,6 +23,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Number;
 
@@ -89,6 +92,7 @@ class BackupDbsTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     self::backupAction(),
+                    self::anonymizedBackupAction(),
                     self::restoreAction(),
                     DeleteBulkAction::make(),
                 ]),
@@ -129,6 +133,71 @@ class BackupDbsTable
                 Notification::make()
                     ->title('Backup avviato')
                     ->body(implode(', ', $names))
+                    ->success()
+                    ->send();
+            });
+    }
+
+    private static function anonymizedBackupAction(): BulkAction
+    {
+        return BulkAction::make('anonimizza')
+            ->label('Backup anonimizzato')
+            ->icon('heroicon-o-shield-check')
+            ->modalHeading('Backup anonimizzato dei database selezionati')
+            ->modalDescription('Parte ora una copia in cui i dati personali sono sostituiti con dati finti; il database vero non cambia. Se dopo la sostituzione restano valori che somigliano a dati personali, il file non viene prodotto. Lo storico è nella pagina Anonimizzati.')
+            ->modalSubmitActionLabel('Avvia il backup anonimizzato')
+            ->deselectRecordsAfterCompletion()
+            ->schema([
+                TextInput::make('admin_email')
+                    ->label('Email di accesso per la manutenzione')
+                    ->email()
+                    ->required()
+                    ->helperText('Nella copia il primo utente prende questo indirizzo; gli altri utenti ricevono indirizzi finti.'),
+                TextInput::make('password')
+                    ->label('Password per la manutenzione')
+                    ->password()
+                    ->revealable()
+                    ->required()
+                    ->minLength(12)
+                    ->helperText('È la password di tutti gli utenti della copia. Si conserva solo come hash e non si mostra più.'),
+            ])
+            ->action(function (EloquentCollection|Collection|LazyCollection $records, array $data): void {
+                $refused = array_map('strtolower', (array) config('anonymize.refused_databases'));
+
+                $databases = $records
+                    ->filter(fn (BackupDb $record): bool => $record->isOnThisServer() && ! in_array(strtolower($record->database_name), $refused, true))
+                    ->pluck('database_name')
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->all();
+
+                if ($databases === []) {
+                    Notification::make()
+                        ->title('Nessun database anonimizzabile')
+                        ->body('Si anonimizzano solo i database di questo server, esclusi quelli delle segnalazioni.')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                $hash = Hash::make((string) $data['password']);
+
+                foreach ($databases as $database) {
+                    $backup = AnonymizedBackup::query()->create([
+                        'server_name' => (string) config('backup_paths.destination_prefix'),
+                        'database_name' => $database,
+                        'status' => AnonymizedBackup::PENDING,
+                        'requested_by' => auth()->id(),
+                    ]);
+
+                    RunAnonymizedBackup::dispatchAfterResponse($backup, (string) $data['admin_email'], $hash);
+                }
+
+                Notification::make()
+                    ->title('Backup anonimizzato avviato')
+                    ->body(implode(', ', $databases))
                     ->success()
                     ->send();
             });

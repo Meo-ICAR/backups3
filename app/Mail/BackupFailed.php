@@ -20,8 +20,18 @@ class BackupFailed extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Backup notturno fallito su '.($this->report['server'] ?? 'server'),
+            subject: self::title($this->report).' fallito su '.($this->report['server'] ?? 'server'),
         );
+    }
+
+    /** @param  array<string, mixed>  $report */
+    public static function title(array $report): string
+    {
+        return match ($report['kind'] ?? 'nightly') {
+            'anonymized' => 'Backup anonimizzato',
+            'anonymized_restore' => 'Ripristino del backup anonimizzato',
+            default => 'Backup notturno',
+        };
     }
 
     public function content(): Content
@@ -40,7 +50,7 @@ class BackupFailed extends Mailable
     public function lines(): array
     {
         $report = $this->report;
-        $lines = ['Il backup notturno del server '.($report['server'] ?? '-').' non è andato a buon fine ('.now()->format('d/m/Y H:i').', durata '.($report['seconds'] ?? 0).' s).', '', 'Fasi:'];
+        $lines = [self::title($report).' del server '.($report['server'] ?? '-').' non è andato a buon fine ('.now()->format('d/m/Y H:i').', durata '.($report['seconds'] ?? 0).' s).', '', 'Fasi:'];
 
         foreach ((array) ($report['exit_codes'] ?? []) as $phase => $code) {
             $lines[] = '- '.$phase.': '.($code === 0 ? 'ok' : 'FALLITA (codice '.$code.')');
