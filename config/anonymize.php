@@ -93,6 +93,17 @@ return [
         'process_tasks.escalation_rules' => 'free_text',
         // whistle: il codice di accesso al modulo pubblico non somiglia a nessun modello di nome.
         'companies.shared_passcode' => 'secret',
+
+
+        // Riferimenti al repository documentale (SharePoint): il fornitore non vi ha accesso e nella copia non devono restare.
+        'documents.app_id' => 'secret',
+        'documents.app_drive_id' => 'secret',
+        'documents.app_etag' => 'secret',
+        'documents.channel_ref' => 'secret',
+        'documents.file_hash' => 'secret',
+        'audits.drive_folder_id' => 'secret',
+        'companies.drive_folder_id' => 'secret',
+        'incoming_emails.drive_folder_id' => 'secret',
     ],
 
     // Strategie per nome di colonna, nell'ordine: vince la prima che corrisponde. Le strategie sono in App\Services\Anonymizer.
