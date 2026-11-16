@@ -38,13 +38,14 @@ class BackupDatabases extends Command
 
         $only = BackupDb::namesToBackUp() ?: config('backup_paths.databases.only', []);
 
+        $existing = array_column(DB::select('SHOW DATABASES'), 'Database');
+
         if ($only !== []) {
-            return array_values($only);
+            // L'elenco in configurazione vale per tutti i server: qui si salvano solo i database che esistono davvero, gli altri non sono un errore.
+            return array_values(array_intersect($only, $existing));
         }
 
-        $ignored = config('backup_paths.databases.ignored', []);
-
-        return array_values(array_diff(array_column(DB::select('SHOW DATABASES'), 'Database'), $ignored));
+        return array_values(array_diff($existing, config('backup_paths.databases.ignored', [])));
     }
 
     public function handle(DumpChangeDetector $changes): int
