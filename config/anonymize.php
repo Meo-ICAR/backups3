@@ -139,7 +139,7 @@ return [
         // Falsi positivi riconosciuti: 'tabella.colonna'.
         // Identificativi di sistemi esterni lunghi 9-10 cifre, che somigliano a un numero di telefono.
         'ignore_columns' => ['documents.app_etag', 'documents.legacy_id', 'proformas.legacy_id', 'invoiceins.id_documento',
-            // Definizioni dei processi (non dati personali) che citano la casella aziendale di ruolo recruiting@races.it
+            // Definizioni dei processi (non dati personali) che citano la casella aziendale di ruolo pechub@races.it
             'employee_types.description', 'employee_types.email', 'process_task_items.name', 'process_task_raci.notes',
             'process_tasks.description', 'processes.description', 'processes.visibility_bcc'],
         // Forma esatta, dall'inizio alla fine del valore, dei dati finti prodotti da questo comando: non sono dati personali e si ignorano.
