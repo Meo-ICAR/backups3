@@ -94,7 +94,6 @@ return [
         // whistle: il codice di accesso al modulo pubblico non somiglia a nessun modello di nome.
         'companies.shared_passcode' => 'secret',
 
-
         // Riferimenti al repository documentale (SharePoint): il fornitore non vi ha accesso e nella copia non devono restare.
         'documents.app_id' => 'secret',
         'documents.app_drive_id' => 'secret',
@@ -141,7 +140,9 @@ return [
         'ignore_columns' => ['documents.app_etag', 'documents.legacy_id', 'proformas.legacy_id', 'invoiceins.id_documento',
             // Definizioni dei processi (non dati personali) che citano la casella aziendale di ruolo pechub@races.it
             'employee_types.description', 'employee_types.email', 'process_task_items.name', 'process_task_raci.notes',
-            'process_tasks.description', 'processes.description', 'processes.visibility_bcc'],
+            'process_tasks.description', 'processes.description', 'processes.visibility_bcc',
+            // Elenco dei mittenti da scartare: domini e caselle aziendali di ruolo (archiviostorico@, bomutui@, boprestiti@races.it)
+            'sender_blacklists.pattern'],
         // Forma esatta, dall'inizio alla fine del valore, dei dati finti prodotti da questo comando: non sono dati personali e si ignorano.
         // Un valore reale che solo comincia in modo simile (es. una nota che inizia con «Nome») resta visibile al controllo.
         'fake_values' => '^(ZZZZZZ[0-9]{2}A[0-9]{2}Z[0-9]{3}Z|IT00Z[0-9]{22}|[+]39000[0-9]{7}|00[0-9]{9}|anon_[0-9a-f]{4}x[0-9a-f]{4}x[0-9a-f]{4}|Nome[0-9a-f]{6}|Cognome[0-9a-f]{6}|Soggetto [0-9a-f]{8}|Via Esempio [0-9]{1,2}|Comune Esempio|u[0-9a-f]{16}@example[.]invalid)$',
